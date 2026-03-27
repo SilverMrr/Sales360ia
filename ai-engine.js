@@ -234,7 +234,6 @@ window.S360AI = {
   version: AI_ENGINE_VERSION,
   analyzeTranscript,
   analyzeCallAudio,
-  analyzeAudioCall: analyzeCallAudio,
   upsertContact,
   markStepDone,
   deleteStep,

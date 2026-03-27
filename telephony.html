@@ -738,7 +738,7 @@ Pierre : Oui, j'aimerais savoir si on peut intégrer ça avec notre CRM actuel S
       document.getElementById('btn-rec-analyze').disabled = true;
 
       try {
-        const analyzeAudioFn = S360AI?.analyzeCallAudio || S360AI?.analyzeAudioCall;
+        const analyzeAudioFn = S360AI?.analyzeCallAudio;
         if (typeof analyzeAudioFn !== 'function') {
           throw new Error("Le moteur IA audio n'est pas chargé. Rechargez la page.");
         }
