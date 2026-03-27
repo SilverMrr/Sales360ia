@@ -294,6 +294,13 @@
                 <button class="btn btn-outline" id="btn-audio-upload" type="button" onclick="document.getElementById('audio-upload-input').click()">📁 Upload audio</button>
                 <button class="btn btn-primary" id="btn-rec-analyze" type="button" onclick="analyzeRecordedAudio()" disabled>🧠 Analyser l'appel audio</button>
               </div>
+              <div style="margin-top:10px; display:flex; gap:8px; flex-wrap:wrap;">
+                <input id="api-base-url" class="form-input" placeholder="URL backend (ex: https://api.monapp.com)" style="max-width:420px;">
+                <button type="button" class="btn btn-outline" onclick="saveApiBaseUrl()">💾 Sauver URL API</button>
+              </div>
+              <div style="font-size:12px;color:var(--text-light);margin-top:6px;">
+                Sur GitHub Pages, configurez l'URL de votre backend (sinon /api/* n'existe pas).
+              </div>
               <input id="audio-upload-input" type="file" accept="audio/*" style="display:none;">
               <audio id="audio-preview" class="audio-preview" controls style="display:none;"></audio>
               <div id="audio-meta" style="font-size:12px;color:var(--text-light);margin-top:8px;"></div>
@@ -542,7 +549,7 @@ Pierre : Oui, j'aimerais savoir si on peut intégrer ça avec notre CRM actuel S
     // ── Update sidebar badge ───────────────────────────────
     function refreshBadge() {
       if (!window.S360AI) return;
-      const steps = S360AI.loadData(S360AI.STORAGE_NEXT_STEPS);
+      const steps = window.S360AI.loadData(window.S360AI.STORAGE_NEXT_STEPS);
       const pending = steps.filter(s => !s.done).length;
       const badge = document.getElementById('sidebar-badge');
       if (badge) {
@@ -593,7 +600,7 @@ Pierre : Oui, j'aimerais savoir si on peut intégrer ça avec notre CRM actuel S
 
     // ── Main analysis ──────────────────────────────────────
     async function startAnalysis() {
-      if (!window.S360AI || typeof S360AI.analyzeTranscript !== 'function') {
+      if (!window.S360AI || typeof window.S360AI.analyzeTranscript !== 'function') {
         showToast("❌ Moteur IA non chargé. Rechargez la page (Ctrl+F5).", 'error');
         return;
       }
@@ -611,7 +618,7 @@ Pierre : Oui, j'aimerais savoir si on peut intégrer ça avec notre CRM actuel S
       document.getElementById('btn-analyze').disabled = true;
 
       try {
-        const res = await S360AI.analyzeTranscript(text, caller);
+        const res = await window.S360AI.analyzeTranscript(text, caller);
         lastResult = res;
         renderResult(res.analysis, res.nextSteps);
         refreshBadge();
@@ -869,7 +876,7 @@ Pierre : Oui, j'aimerais savoir si on peut intégrer ça avec notre CRM actuel S
     // ── Render history ─────────────────────────────────────
     function renderHistory() {
       if (!window.S360AI) return;
-      const calls = S360AI.loadData(S360AI.STORAGE_CALLS);
+      const calls = window.S360AI.loadData(window.S360AI.STORAGE_CALLS);
       const container = document.getElementById('call-history-list');
 
       if (!calls.length) {
@@ -885,7 +892,7 @@ Pierre : Oui, j'aimerais savoir si on peut intégrer ça avec notre CRM actuel S
         const initials = (p.name || '??').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
         const sentiment = c.analysis?.callSummary?.sentiment || 'neutre';
         const sentEmoji = { positif: '😊', neutre: '😐', négatif: '😟' }[sentiment] || '😐';
-        const steps = (S360AI.loadData(S360AI.STORAGE_NEXT_STEPS)).filter(s => s.callId === c.id);
+        const steps = (window.S360AI.loadData(window.S360AI.STORAGE_NEXT_STEPS)).filter(s => s.callId === c.id);
         const pending = steps.filter(s => !s.done).length;
         return `
           <div class="call-history-item" onclick="openCallDetail('${c.id}')">
@@ -908,13 +915,13 @@ Pierre : Oui, j'aimerais savoir si on peut intégrer ça avec notre CRM actuel S
     // ── Open call detail modal ─────────────────────────────
     function openCallDetail(callId) {
       if (!window.S360AI) return;
-      const calls = S360AI.loadData(S360AI.STORAGE_CALLS);
+      const calls = window.S360AI.loadData(window.S360AI.STORAGE_CALLS);
       const call  = calls.find(c => c.id === callId);
       if (!call) return;
 
       const p  = call.analysis?.prospect || {};
       const cs = call.analysis?.callSummary || {};
-      const steps = S360AI.loadData(S360AI.STORAGE_NEXT_STEPS).filter(s => s.callId === callId);
+      const steps = window.S360AI.loadData(window.S360AI.STORAGE_NEXT_STEPS).filter(s => s.callId === callId);
       const icons = { urgent: '⚡', 'follow-up': '📅', opportunity: '🎯', risk: '⚠️' };
 
       document.getElementById('modal-call-title').textContent = `${p.name || 'Inconnu'} — ${new Date(call.date).toLocaleString('fr-FR')}`;
@@ -951,10 +958,21 @@ Pierre : Oui, j'aimerais savoir si on peut intégrer ça avec notre CRM actuel S
     function clearHistory() {
       if (!window.S360AI) return;
       if (confirm('Vider tout l\'historique des appels ? (les contacts et next steps seront conservés)')) {
-        S360AI.saveData(S360AI.STORAGE_CALLS, []);
+        window.S360AI.saveData(window.S360AI.STORAGE_CALLS, []);
         renderHistory();
         showToast('🗑️ Historique vidé');
       }
+    }
+
+    function saveApiBaseUrl() {
+      const input = document.getElementById('api-base-url');
+      const url = input?.value || '';
+      if (!window.S360AI || typeof window.S360AI.setApiBaseUrl !== 'function') {
+        showToast("❌ Moteur IA non chargé.", 'error');
+        return;
+      }
+      const saved = window.S360AI.setApiBaseUrl(url);
+      showToast(saved ? `✅ URL API sauvegardée: ${saved}` : '✅ URL API locale (/api) activée');
     }
 
     // ── Toast helper ───────────────────────────────────────
@@ -977,6 +995,14 @@ Pierre : Oui, j'aimerais savoir si on peut intégrer ça avec notre CRM actuel S
 
     // ── Init ───────────────────────────────────────────────
     ensureAudioAnalysisCompatibility();
+    if (window.S360AI && typeof window.S360AI.getApiBaseUrl === 'function') {
+      const currentApiBase = window.S360AI.getApiBaseUrl();
+      const apiInput = document.getElementById('api-base-url');
+      if (apiInput) apiInput.value = currentApiBase || '';
+      if (location.hostname.includes('github.io') && !currentApiBase) {
+        showToast("⚠️ Configurez l'URL backend API pour GitHub Pages.", 'warning');
+      }
+    }
     refreshBadge();
     updateRecorderButtons();
 
@@ -993,6 +1019,7 @@ Pierre : Oui, j'aimerais savoir si on peut intégrer ça avec notre CRM actuel S
     window.startRecording = startRecording;
     window.stopRecording = stopRecording;
     window.analyzeRecordedAudio = analyzeRecordedAudio;
+    window.saveApiBaseUrl = saveApiBaseUrl;
   </script>
 </body>
 </html>

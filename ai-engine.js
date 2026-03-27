@@ -5,6 +5,7 @@
 
 const AI_PROVIDER = "gemini";
 const AI_ENGINE_VERSION = "2026-03-27-backend";
+const S360_API_BASE_STORAGE_KEY = "s360_api_base_url";
 
 // ── Storage keys ─────────────────────────────────────────────
 const STORAGE_CALLS = "s360_calls";
@@ -38,13 +39,39 @@ async function parseError(res, fallbackMessage) {
   return body?.error || fallbackMessage;
 }
 
+function getApiBaseUrl() {
+  const fromWindow = typeof window !== "undefined" ? (window.S360_API_BASE_URL || "") : "";
+  const fromStorage = typeof localStorage !== "undefined" ? (localStorage.getItem(S360_API_BASE_STORAGE_KEY) || "") : "";
+  const value = (fromWindow || fromStorage || "").trim();
+  return value.replace(/\/$/, "");
+}
+
+function apiUrl(path) {
+  const base = getApiBaseUrl();
+  return base ? `${base}${path}` : path;
+}
+
+function setApiBaseUrl(url = "") {
+  const clean = String(url || "").trim().replace(/\/$/, "");
+  if (typeof window !== "undefined") window.S360_API_BASE_URL = clean;
+  if (typeof localStorage !== "undefined") localStorage.setItem(S360_API_BASE_STORAGE_KEY, clean);
+  return clean;
+}
+
 // ── Appel backend pour analyse transcript ────────────────────
 async function callTranscriptAnalysis(transcriptText, callerId = "") {
-  const res = await fetch("/api/analyze-transcript", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ transcriptText, callerId })
-  });
+  let res;
+  try {
+    res = await fetch(apiUrl("/api/analyze-transcript"), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ transcriptText, callerId })
+    });
+  } catch (err) {
+    throw new Error(
+      `Backend API inaccessible (${apiUrl("/api/analyze-transcript")}). Configurez S360_API_BASE_URL.`
+    );
+  }
 
   if (!res.ok) {
     throw new Error(await parseError(res, `Erreur API (${res.status})`));
@@ -116,10 +143,17 @@ async function analyzeCallAudio(audioBlob, callerId = "") {
   formData.append("audio", file);
   formData.append("callerId", callerId || "");
 
-  const res = await fetch("/api/analyze-call-audio", {
-    method: "POST",
-    body: formData
-  });
+  let res;
+  try {
+    res = await fetch(apiUrl("/api/analyze-call-audio"), {
+      method: "POST",
+      body: formData
+    });
+  } catch (err) {
+    throw new Error(
+      `Backend API inaccessible (${apiUrl("/api/analyze-call-audio")}). Configurez S360_API_BASE_URL.`
+    );
+  }
 
   if (!res.ok) {
     throw new Error(await parseError(res, `Erreur API audio (${res.status})`));
@@ -234,6 +268,8 @@ window.S360AI = {
   version: AI_ENGINE_VERSION,
   analyzeTranscript,
   analyzeCallAudio,
+  getApiBaseUrl,
+  setApiBaseUrl,
   upsertContact,
   markStepDone,
   deleteStep,
