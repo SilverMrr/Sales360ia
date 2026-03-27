@@ -556,11 +556,12 @@ Pierre : Oui, j'aimerais savoir si on peut intégrer ça avec notre CRM actuel S
       return { ...persisted, transcript: audioData?.audioAnalysis?.transcript || '', audioAnalysis: audioData?.audioAnalysis || null };
     }
 
-    function ensureAudioAnalysisCompatibility() {
-      if (window.S360AI && typeof window.S360AI.analyzeCallAudio !== 'function') {
-        console.warn('[Sales360] analyzeCallAudio absent sur S360AI, fallback activé.');
-        window.S360AI.analyzeCallAudio = fallbackAnalyzeCallAudio;
+    function getAnalyzeCallAudioFn() {
+      if (window.S360AI && typeof window.S360AI.analyzeCallAudio === 'function') {
+        return S360AI.analyzeCallAudio.bind(S360AI);
       }
+      console.warn('[Sales360] analyzeCallAudio absent sur S360AI, fallback local utilisé.');
+      return fallbackAnalyzeCallAudio;
     }
 
     // ── Update sidebar badge ───────────────────────────────
@@ -767,11 +768,8 @@ Pierre : Oui, j'aimerais savoir si on peut intégrer ça avec notre CRM actuel S
       document.getElementById('btn-rec-analyze').disabled = true;
 
       try {
-        ensureAudioAnalysisCompatibility();
-        if (!window.S360AI || typeof S360AI.analyzeCallAudio !== 'function') {
-          throw new Error("Le moteur audio n'est pas chargé. Rechargez la page (Ctrl+F5).");
-        }
-        const res = await S360AI.analyzeCallAudio(recordedBlob, caller);
+        const analyzeAudio = getAnalyzeCallAudioFn();
+        const res = await analyzeAudio(recordedBlob, caller);
         lastResult = res;
         document.getElementById('transcript-input').value = res.transcript || '';
         renderResult(res.analysis, res.nextSteps);
@@ -992,7 +990,6 @@ Pierre : Oui, j'aimerais savoir si on peut intégrer ça avec notre CRM actuel S
     });
 
     // ── Init ───────────────────────────────────────────────
-    ensureAudioAnalysisCompatibility();
     refreshBadge();
     updateRecorderButtons();
 
