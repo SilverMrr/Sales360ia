@@ -233,6 +233,7 @@ window.S360AI = {
   model: "backend-proxy",
   version: AI_ENGINE_VERSION,
   analyzeTranscript,
+  // API utilisée par telephony.html
   analyzeCallAudio,
   upsertContact,
   markStepDone,
