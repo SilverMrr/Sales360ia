@@ -520,7 +520,6 @@ Pierre : Oui, j'aimerais savoir si on peut intégrer ça avec notre CRM actuel S
     </div>
   </div>
 
-  <script src="ai-engine.gemini.js?v=20260327"></script>
   <script src="main.js"></script>
   <script>
     // ── State ──────────────────────────────────────────────
@@ -531,6 +530,7 @@ Pierre : Oui, j'aimerais savoir si on peut intégrer ça avec notre CRM actuel S
     let recordedBlob = null;
     let recStartedAt = 0;
     let recTimer = null;
+
 
     // ── Update sidebar badge ───────────────────────────────
     function refreshBadge() {
@@ -726,6 +726,7 @@ Pierre : Oui, j'aimerais savoir si on peut intégrer ça avec notre CRM actuel S
       document.getElementById('btn-rec-analyze').disabled = true;
 
       try {
+
         const res = await S360AI.analyzeCallAudio(recordedBlob, caller);
         lastResult = res;
         document.getElementById('transcript-input').value = res.transcript || '';
@@ -941,6 +942,7 @@ Pierre : Oui, j'aimerais savoir si on peut intégrer ça avec notre CRM actuel S
     });
 
     // ── Init ───────────────────────────────────────────────
+    ensureAudioAnalysisCompatibility();
     refreshBadge();
     updateRecorderButtons();
 
