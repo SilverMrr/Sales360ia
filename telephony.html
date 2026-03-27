@@ -522,7 +522,6 @@ Pierre : Oui, j'aimerais savoir si on peut intégrer ça avec notre CRM actuel S
     </div>
   </div>
 
-  <script src="ai-engine.js"></script>
   <script src="main.js"></script>
   <script>
     // ── State ──────────────────────────────────────────────
@@ -963,6 +962,7 @@ Pierre : Oui, j'aimerais savoir si on peut intégrer ça avec notre CRM actuel S
     });
 
     // ── Init ───────────────────────────────────────────────
+    ensureAudioAnalysisCompatibility();
     refreshBadge();
     updateRecorderButtons();
 
