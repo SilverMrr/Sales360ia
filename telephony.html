@@ -522,6 +522,7 @@ Pierre : Oui, j'aimerais savoir si on peut intégrer ça avec notre CRM actuel S
     </div>
   </div>
 
+  <script src="ai-engine.js?v=20260327e"></script>
   <script src="main.js"></script>
   <script>
     // ── State ──────────────────────────────────────────────
@@ -533,8 +534,14 @@ Pierre : Oui, j'aimerais savoir si on peut intégrer ça avec notre CRM actuel S
     let recStartedAt = 0;
     let recTimer = null;
 
+    function ensureAudioAnalysisCompatibility() {
+      // Compat legacy: certains anciens bundles appellent encore cette fonction à l'init.
+      return Boolean(window.S360AI);
+    }
+
     // ── Update sidebar badge ───────────────────────────────
     function refreshBadge() {
+      if (!window.S360AI) return;
       const steps = S360AI.loadData(S360AI.STORAGE_NEXT_STEPS);
       const pending = steps.filter(s => !s.done).length;
       const badge = document.getElementById('sidebar-badge');
@@ -586,6 +593,10 @@ Pierre : Oui, j'aimerais savoir si on peut intégrer ça avec notre CRM actuel S
 
     // ── Main analysis ──────────────────────────────────────
     async function startAnalysis() {
+      if (!window.S360AI || typeof S360AI.analyzeTranscript !== 'function') {
+        showToast("❌ Moteur IA non chargé. Rechargez la page (Ctrl+F5).", 'error');
+        return;
+      }
       const text = document.getElementById('transcript-input').value.trim();
       const caller = document.getElementById('caller-name').value.trim();
 
@@ -737,7 +748,7 @@ Pierre : Oui, j'aimerais savoir si on peut intégrer ça avec notre CRM actuel S
       document.getElementById('btn-rec-analyze').disabled = true;
 
       try {
-        const analyzeAudioFn = S360AI?.analyzeCallAudio;
+        const analyzeAudioFn = window.S360AI?.analyzeCallAudio;
         if (typeof analyzeAudioFn !== 'function') {
           throw new Error("Le moteur IA audio n'est pas chargé. Rechargez la page.");
         }
@@ -857,6 +868,7 @@ Pierre : Oui, j'aimerais savoir si on peut intégrer ça avec notre CRM actuel S
 
     // ── Render history ─────────────────────────────────────
     function renderHistory() {
+      if (!window.S360AI) return;
       const calls = S360AI.loadData(S360AI.STORAGE_CALLS);
       const container = document.getElementById('call-history-list');
 
@@ -895,6 +907,7 @@ Pierre : Oui, j'aimerais savoir si on peut intégrer ça avec notre CRM actuel S
 
     // ── Open call detail modal ─────────────────────────────
     function openCallDetail(callId) {
+      if (!window.S360AI) return;
       const calls = S360AI.loadData(S360AI.STORAGE_CALLS);
       const call  = calls.find(c => c.id === callId);
       if (!call) return;
@@ -936,6 +949,7 @@ Pierre : Oui, j'aimerais savoir si on peut intégrer ça avec notre CRM actuel S
 
     // ── Clear history ──────────────────────────────────────
     function clearHistory() {
+      if (!window.S360AI) return;
       if (confirm('Vider tout l\'historique des appels ? (les contacts et next steps seront conservés)')) {
         S360AI.saveData(S360AI.STORAGE_CALLS, []);
         renderHistory();
