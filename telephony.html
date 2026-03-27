@@ -738,10 +738,11 @@ Pierre : Oui, j'aimerais savoir si on peut intégrer ça avec notre CRM actuel S
       document.getElementById('btn-rec-analyze').disabled = true;
 
       try {
-        if (!window.S360AI || typeof S360AI.analyzeCallAudio !== 'function') {
+        const analyzeAudioFn = S360AI?.analyzeCallAudio || S360AI?.analyzeAudioCall;
+        if (typeof analyzeAudioFn !== 'function') {
           throw new Error("Le moteur IA audio n'est pas chargé. Rechargez la page.");
         }
-        const res = await S360AI.analyzeCallAudio(recordedBlob, caller);
+        const res = await analyzeAudioFn(recordedBlob, caller);
         lastResult = res;
         document.getElementById('transcript-input').value = res.transcript || '';
         renderResult(res.analysis, res.nextSteps);
