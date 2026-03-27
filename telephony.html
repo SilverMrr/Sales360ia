@@ -291,8 +291,10 @@
               <div class="rec-controls">
                 <button class="btn btn-secondary" id="btn-rec-start" type="button" onclick="startRecording()">🎙️ Démarrer l'enregistrement</button>
                 <button class="btn btn-outline" id="btn-rec-stop" type="button" onclick="stopRecording()" disabled>⏹️ Arrêter</button>
+                <button class="btn btn-outline" id="btn-audio-upload" type="button" onclick="document.getElementById('audio-upload-input').click()">📁 Upload audio</button>
                 <button class="btn btn-primary" id="btn-rec-analyze" type="button" onclick="analyzeRecordedAudio()" disabled>🧠 Analyser l'appel audio</button>
               </div>
+              <input id="audio-upload-input" type="file" accept="audio/*" style="display:none;">
               <audio id="audio-preview" class="audio-preview" controls style="display:none;"></audio>
               <div id="audio-meta" style="font-size:12px;color:var(--text-light);margin-top:8px;"></div>
             </div>
@@ -531,7 +533,6 @@ Pierre : Oui, j'aimerais savoir si on peut intégrer ça avec notre CRM actuel S
     let recStartedAt = 0;
     let recTimer = null;
 
-
     // ── Update sidebar badge ───────────────────────────────
     function refreshBadge() {
       const steps = S360AI.loadData(S360AI.STORAGE_NEXT_STEPS);
@@ -555,6 +556,7 @@ Pierre : Oui, j'aimerais savoir si on peut intégrer ça avec notre CRM actuel S
     // ── File drag/drop ─────────────────────────────────────
     const dropZone = document.getElementById('drop-zone');
     const fileInput = document.getElementById('file-input');
+    const audioUploadInput = document.getElementById('audio-upload-input');
 
     dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
     dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
@@ -567,6 +569,10 @@ Pierre : Oui, j'aimerais savoir si on peut intégrer ça avec notre CRM actuel S
 
     fileInput.addEventListener('change', () => {
       if (fileInput.files[0]) readFile(fileInput.files[0]);
+    });
+    audioUploadInput.addEventListener('change', () => {
+      const file = audioUploadInput.files?.[0];
+      if (file) loadAudioBlobForAnalysis(file, `Fichier audio prêt (${file.name})`);
     });
 
     function readFile(file) {
@@ -674,19 +680,7 @@ Pierre : Oui, j'aimerais savoir si on peut intégrer ça avec notre CRM actuel S
 
       mediaRecorder.onstop = () => {
         const mime = mediaRecorder.mimeType || 'audio/webm';
-        recordedBlob = new Blob(recordingChunks, { type: mime });
-        if (!recordedBlob.size) {
-          showToast('⚠️ Enregistrement vide, veuillez réessayer.', 'warning');
-          recordedBlob = null;
-          updateRecorderButtons();
-          return;
-        }
-        const audioUrl = URL.createObjectURL(recordedBlob);
-        const preview = document.getElementById('audio-preview');
-        preview.src = audioUrl;
-        preview.style.display = 'block';
-        document.getElementById('audio-meta').textContent = `Format détecté: ${mime} · Taille: ${(recordedBlob.size / 1024).toFixed(1)} Ko`;
-        updateRecorderButtons();
+        loadAudioBlobForAnalysis(new Blob(recordingChunks, { type: mime }), 'Enregistrement prêt à être analysé.');
       };
 
       recStartedAt = Date.now();
@@ -714,6 +708,23 @@ Pierre : Oui, j'aimerais savoir si on peut intégrer ça avec notre CRM actuel S
       showToast('⏹️ Enregistrement terminé');
     }
 
+    function loadAudioBlobForAnalysis(blob, successMessage = 'Audio prêt à être analysé.') {
+      recordedBlob = blob;
+      if (!recordedBlob?.size) {
+        showToast('⚠️ Audio invalide ou vide.', 'warning');
+        recordedBlob = null;
+        updateRecorderButtons();
+        return;
+      }
+      const audioUrl = URL.createObjectURL(recordedBlob);
+      const preview = document.getElementById('audio-preview');
+      preview.src = audioUrl;
+      preview.style.display = 'block';
+      document.getElementById('audio-meta').textContent = `Format détecté: ${recordedBlob.type || 'audio/webm'} · Taille: ${(recordedBlob.size / 1024).toFixed(1)} Ko`;
+      updateRecorderButtons();
+      showToast(`✅ ${successMessage}`);
+    }
+
     async function analyzeRecordedAudio() {
       if (!recordedBlob || !recordedBlob.size) {
         showToast('⚠️ Aucun enregistrement à analyser.', 'warning');
@@ -726,8 +737,11 @@ Pierre : Oui, j'aimerais savoir si on peut intégrer ça avec notre CRM actuel S
       document.getElementById('btn-rec-analyze').disabled = true;
 
       try {
-
-        const res = await S360AI.analyzeCallAudio(recordedBlob, caller);
+        const analyzeAudioFn = S360AI?.analyzeCallAudio;
+        if (typeof analyzeAudioFn !== 'function') {
+          throw new Error("Le moteur IA audio n'est pas chargé. Rechargez la page.");
+        }
+        const res = await analyzeAudioFn(recordedBlob, caller);
         lastResult = res;
         document.getElementById('transcript-input').value = res.transcript || '';
         renderResult(res.analysis, res.nextSteps);
@@ -830,6 +844,12 @@ Pierre : Oui, j'aimerais savoir si on peut intégrer ça avec notre CRM actuel S
       document.getElementById('ai-result').style.display = 'none';
       document.getElementById('audio-insights-card').style.display = 'none';
       fileInput.value = '';
+      audioUploadInput.value = '';
+      recordedBlob = null;
+      document.getElementById('audio-preview').style.display = 'none';
+      document.getElementById('audio-preview').src = '';
+      document.getElementById('audio-meta').textContent = '';
+      updateRecorderButtons();
     }
 
     function goToContacts()     { window.location.href = 'contacts.html'; }

@@ -1,4 +1,10 @@
 // ============================================================
+// Sales360 — AI Engine (frontend)
+// Les appels Gemini passent uniquement par le backend (/api/*)
+// ============================================================
+
+const AI_PROVIDER = "gemini";
+const AI_ENGINE_VERSION = "2026-03-27-backend";
 
 // ── Storage keys ─────────────────────────────────────────────
 const STORAGE_CALLS = "s360_calls";
@@ -20,6 +26,36 @@ function saveData(key, data) {
 
 function uid() {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+}
+
+async function parseError(res, fallbackMessage) {
+  let body = {};
+  try {
+    body = await res.json();
+  } catch {
+    // no-op
+  }
+  return body?.error || fallbackMessage;
+}
+
+// ── Appel backend pour analyse transcript ────────────────────
+async function callTranscriptAnalysis(transcriptText, callerId = "") {
+  const res = await fetch("/api/analyze-transcript", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ transcriptText, callerId })
+  });
+
+  if (!res.ok) {
+    throw new Error(await parseError(res, `Erreur API (${res.status})`));
+  }
+
+  const data = await res.json();
+  if (!data?.analysis) {
+    throw new Error("Réponse backend invalide: analyse absente.");
+  }
+
+  return data.analysis;
 }
 
 function persistAnalysis(transcriptText, analysis, callerId = "", extra = {}) {
