@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sales360 - Téléphonie</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    /* ── Upload zone ── */
+    .upload-zone {
+      border: 3px dashed var(--border-light);
+      border-radius: var(--radius-lg);
+      padding: 48px 32px;
+      text-align: center;
+      background: var(--bg-light);
+      cursor: pointer;
+      transition: all 0.3s ease;
+      position: relative;
+    }
+    .upload-zone:hover, .upload-zone.dragover {
+      border-color: var(--accent-orange);
+      background: #fff7ed;
+    }
+    .upload-zone input[type="file"] {
+      position: absolute; inset: 0; opacity: 0; cursor: pointer;
+    }
+    .upload-icon { font-size: 56px; margin-bottom: 16px; }
+    .upload-title { font-size: 20px; font-weight: 700; color: var(--text-dark); margin-bottom: 8px; }
+    .upload-sub   { color: var(--text-gray); margin-bottom: 20px; }
+
+    /* ── Textarea transcript ── */
+    .transcript-area {
+      width: 100%;
+      min-height: 220px;
+      padding: 16px;
+      border: 2px solid var(--border-light);
+      border-radius: var(--radius-md);
+      font-size: 15px;
+      font-family: inherit;
+      line-height: 1.7;
+      resize: vertical;
+      transition: border-color 0.2s;
+    }
+    .transcript-area:focus { outline: none; border-color: var(--accent-orange); }
+
+    /* ── AI Result card ── */
+    .ai-result { display: none; animation: fadeSlide 0.4s ease; }
+    @keyframes fadeSlide {
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── Loading spinner ── */
+    .ai-loading {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      padding: 48px;
+      gap: 16px;
+    }
+    .spinner {
+      width: 48px; height: 48px;
+      border: 4px solid var(--border-light);
+      border-top-color: var(--accent-orange);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Prospect badge ── */
+    .prospect-badge {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 4px 14px; border-radius: 20px; font-size: 13px; font-weight: 700;
+    }
+    .prospect-badge.chaud    { background: #fee2e2; color: #991b1b; }
+    .prospect-badge.interesse{ background: #fef3c7; color: #92400e; }
+    .prospect-badge.prospect { background: #dbeafe; color: #1e40af; }
+    .prospect-badge.client   { background: #d1fae5; color: #065f46; }
+
+    /* ── Key points list ── */
+    .keypoints { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+    .keypoints li {
+      padding: 10px 16px; background: var(--bg-light);
+      border-radius: var(--radius-sm); border-left: 3px solid var(--accent-orange);
+      font-size: 14px; color: var(--text-dark);
+    }
+
+    /* ── Next step mini card ── */
+    .step-mini {
+      display: flex; gap: 16px; align-items: flex-start;
+      padding: 14px 16px; border-radius: var(--radius-md);
+      border-left: 4px solid #e2e8f0; background: var(--bg-light); margin-bottom: 10px;
+    }
+    .step-mini.urgent    { border-color: #ef4444; background: #fff5f5; }
+    .step-mini.follow-up { border-color: #3b82f6; background: #f0f7ff; }
+    .step-mini.opportunity { border-color: #10b981; background: #f0fdf4; }
+    .step-mini.risk      { border-color: #f59e0b; background: #fffbeb; }
+    .step-mini-icon { font-size: 22px; min-width: 32px; }
+    .step-mini-title { font-weight: 700; font-size: 14px; color: var(--text-dark); }
+    .step-mini-desc  { font-size: 13px; color: var(--text-gray); margin-top: 2px; }
+    .step-mini-due   { font-size: 12px; color: var(--text-light); margin-top: 4px; }
+
+    /* ── Sentiment pill ── */
+    .sentiment-pill {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 6px 16px; border-radius: 20px; font-weight: 700; font-size: 14px;
+    }
+    .sentiment-pill.positif  { background: #d1fae5; color: #065f46; }
+    .sentiment-pill.neutre   { background: #fef3c7; color: #92400e; }
+    .sentiment-pill.negatif  { background: #fee2e2; color: #991b1b; }
+
+    /* ── Recent calls ── */
+    .call-history-item {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 16px; border-radius: var(--radius-md); background: var(--bg-light);
+      margin-bottom: 10px; gap: 12px; cursor: pointer; transition: all 0.2s;
+    }
+    .call-history-item:hover { background: #fff7ed; }
+    .call-hist-left { display: flex; align-items: center; gap: 16px; flex: 1; }
+    .call-hist-avatar {
+      width: 44px; height: 44px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent-orange), #fbbf24);
+      display: flex; align-items: center; justify-content: center;
+      color: white; font-weight: 700; font-size: 16px; flex-shrink: 0;
+    }
+    .call-hist-name  { font-weight: 700; color: var(--text-dark); }
+    .call-hist-date  { font-size: 13px; color: var(--text-gray); }
+    .call-hist-badge { font-size: 12px; }
+
+    /* ── Tabs ── */
+    .tabs { display: flex; gap: 0; margin-bottom: 24px; border-bottom: 2px solid var(--border-light); }
+    .tab-btn {
+      padding: 12px 24px; background: none; border: none; font-weight: 600;
+      font-size: 15px; cursor: pointer; color: var(--text-gray);
+      border-bottom: 3px solid transparent; margin-bottom: -2px; transition: all 0.2s;
+    }
+    .tab-btn.active { color: var(--accent-orange); border-bottom-color: var(--accent-orange); }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    /* ── Caller name field ── */
+    .caller-field { display: flex; gap: 12px; margin-bottom: 16px; align-items: flex-end; }
+    .caller-field .form-group { flex: 1; margin: 0; }
+
+    /* ── Success toast ── */
+    .toast {
+      position: fixed; bottom: 32px; right: 32px; z-index: 9999;
+      background: #065f46; color: white; padding: 16px 24px;
+      border-radius: var(--radius-md); font-weight: 600; box-shadow: var(--shadow-lg);
+      display: flex; align-items: center; gap: 12px;
+      transform: translateY(80px); opacity: 0;
+      transition: all 0.4s cubic-bezier(.34,1.56,.64,1);
+    }
+    .toast.show { transform: translateY(0); opacity: 1; }
+
+    .section-label {
+      font-size: 12px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 1px; color: var(--text-light); margin-bottom: 10px;
+    }
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    @media (max-width: 768px) { .two-col { grid-template-columns: 1fr; } }
+
+    .info-row {
+      display: flex; justify-content: space-between;
+      padding: 10px 0; border-bottom: 1px solid var(--border-light); font-size: 14px;
+    }
+    .info-row:last-child { border: none; }
+    .info-row span:first-child { color: var(--text-gray); }
+    .info-row span:last-child  { font-weight: 600; color: var(--text-dark); }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="logo">
+        <div class="logo-icon">S3</div>
+        <span>Sales360</span>
+      </div>
+      <nav>
+        <ul class="nav-menu">
+          <li class="nav-item"><a href="index.html" class="nav-link">
+            <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+            <span>Accueil</span>
+          </a></li>
+          <li class="nav-item"><a href="dashboard.html" class="nav-link">
+            <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+            <span>Tableau de bord</span>
+          </a></li>
+          <li class="nav-item"><a href="contacts.html" class="nav-link">
+            <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+            <span>Contacts</span>
+          </a></li>
+          <li class="nav-item"><a href="pipeline.html" class="nav-link">
+            <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+            <span>Pipeline</span>
+          </a></li>
+          <li class="nav-item"><a href="telephony.html" class="nav-link active">
+            <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>
+            <span>Téléphonie</span>
+          </a></li>
+          <li class="nav-item"><a href="visio.html" class="nav-link">
+            <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+            <span>Visioconférence</span>
+          </a></li>
+          <li class="nav-item"><a href="recommendations.html" class="nav-link" id="nav-reco">
+            <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
+            <span>Recommandations</span>
+            <span class="nav-badge" id="sidebar-badge" style="display:none">0</span>
+          </a></li>
+          <li class="nav-item"><a href="settings.html" class="nav-link">
+            <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+            <span>Paramètres</span>
+          </a></li>
+        </ul>
+      </nav>
+    </aside>
+
+    <main class="main-content">
+      <header class="topbar">
+        <div class="topbar-left">
+          <h1>Téléphonie & Analyse IA</h1>
+        </div>
+        <div class="topbar-right">
+          <div class="user-profile"><div class="user-avatar">JD</div></div>
+        </div>
+      </header>
+
+      <div class="content">
+
+        <!-- ── TABS ─────────────────────────────────────── -->
+        <div class="tabs">
+          <button class="tab-btn active" onclick="switchTab('analyse', this)">🤖 Analyser un appel</button>
+          <button class="tab-btn" onclick="switchTab('historique', this)">📋 Historique des appels</button>
+          <button class="tab-btn" onclick="switchTab('interface', this)">📞 Interface téléphonique</button>
+        </div>
+
+        <!-- ═══════════════════════════════════════════════
+             TAB 1 — ANALYSE IA
+        ═══════════════════════════════════════════════ -->
+        <div id="tab-analyse" class="tab-content active">
+
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title">📄 Uploader ou coller un transcript</h3>
+            </div>
+
+            <!-- Interlocuteur -->
+            <div class="caller-field">
+              <div class="form-group">
+                <label class="form-label">Nom de l'interlocuteur (optionnel)</label>
+                <input type="text" id="caller-name" class="form-input" placeholder="ex : Pierre Dupont — Innovation Labs">
+              </div>
+            </div>
+
+            <!-- Drop zone -->
+            <div class="upload-zone" id="drop-zone">
+              <input type="file" id="file-input" accept=".txt,.md,.text">
+              <div class="upload-icon">📂</div>
+              <div class="upload-title">Glisser-déposer un fichier ici</div>
+              <div class="upload-sub">Formats acceptés : .txt, .md — ou cliquez pour parcourir</div>
+              <button class="btn btn-secondary" type="button" onclick="document.getElementById('file-input').click(); event.stopPropagation()">
+                Choisir un fichier
+              </button>
+            </div>
+
+            <!-- Séparateur -->
+            <div style="display: flex; align-items: center; gap: 16px; margin: 20px 0;">
+              <hr style="flex:1; border-color: var(--border-light);">
+              <span style="color: var(--text-light); font-weight: 600; font-size: 14px;">OU</span>
+              <hr style="flex:1; border-color: var(--border-light);">
+            </div>
+
+            <!-- Textarea collage direct -->
+            <div class="form-group">
+              <label class="form-label">Coller le texte du transcript directement</label>
+              <textarea id="transcript-input" class="transcript-area"
+                placeholder="Collez ici le texte de votre appel...
+
+Exemple :
+Commercial : Bonjour Pierre, je vous appelle suite à notre échange de la semaine dernière concernant notre solution Sales360.
+Pierre : Oui bonjour ! Oui j'ai regardé la démo que vous m'avez envoyée, c'est assez impressionnant.
+Commercial : Super ! Vous avez des questions sur les fonctionnalités ?
+Pierre : Oui, j'aimerais savoir si on peut intégrer ça avec notre CRM actuel Salesforce..."></textarea>
+            </div>
+
+            <!-- Bouton analyser -->
+            <div style="display: flex; gap: 16px; margin-top: 8px; flex-wrap: wrap;">
+              <button class="btn btn-primary" id="btn-analyze" onclick="startAnalysis()" style="font-size: 17px; padding: 14px 32px;">
+                🤖 Analyser avec l'IA
+              </button>
+              <button class="btn btn-outline" onclick="clearForm()">
+                🗑️ Effacer
+              </button>
+            </div>
+          </div>
+
+          <!-- Loading -->
+          <div class="card ai-loading" id="ai-loading">
+            <div class="spinner"></div>
+            <div style="font-weight: 700; font-size: 18px; color: var(--text-dark);">Analyse en cours...</div>
+            <div style="color: var(--text-gray);">GPT-4o lit le transcript et génère le résumé et les next steps</div>
+          </div>
+
+          <!-- ── RÉSULTAT ───────────────────────────────── -->
+          <div id="ai-result" class="ai-result">
+
+            <!-- Prospect card -->
+            <div class="card">
+              <div class="card-header">
+                <h3 class="card-title">👤 Nouveau prospect détecté</h3>
+                <span id="result-badge" class="prospect-badge prospect">Prospect</span>
+              </div>
+
+              <div class="two-col">
+                <div>
+                  <div class="section-label">Informations</div>
+                  <div class="info-row"><span>Nom</span>       <span id="r-name">—</span></div>
+                  <div class="info-row"><span>Entreprise</span><span id="r-company">—</span></div>
+                  <div class="info-row"><span>Email</span>     <span id="r-email">—</span></div>
+                  <div class="info-row"><span>Téléphone</span> <span id="r-phone">—</span></div>
+                  <div class="info-row"><span>Valeur estimée</span><span id="r-value">—</span></div>
+                  <div class="info-row"><span>Stage pipeline</span><span id="r-stage">—</span></div>
+                </div>
+                <div>
+                  <div class="section-label">Résumé de l'appel</div>
+                  <div class="info-row"><span>Sentiment</span><span id="r-sentiment">—</span></div>
+                  <div class="info-row"><span>Résultat</span><span id="r-outcome" style="text-align:right;max-width:220px">—</span></div>
+                  <div style="margin-top: 16px;">
+                    <div class="section-label">Points clés</div>
+                    <ul class="keypoints" id="r-keypoints"></ul>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Notes prospect -->
+              <div style="margin-top: 20px;">
+                <div class="section-label">Notes</div>
+                <p id="r-notes" style="color: var(--text-gray); font-size: 14px; line-height: 1.7; background: var(--bg-light); padding: 14px 16px; border-radius: var(--radius-sm);"></p>
+              </div>
+
+              <!-- Objections -->
+              <div id="r-objections-wrap" style="margin-top: 16px; display:none;">
+                <div class="section-label">Objections détectées</div>
+                <ul class="keypoints" id="r-objections" style="--kp-color: #ef4444;"></ul>
+              </div>
+
+              <div style="margin-top: 24px; display: flex; gap: 12px; flex-wrap: wrap;">
+                <button class="btn btn-primary" onclick="goToContacts()">👥 Voir dans Contacts</button>
+                <button class="btn btn-secondary" onclick="goToReco()">💡 Voir les next steps</button>
+              </div>
+            </div>
+
+            <!-- Next steps -->
+            <div class="card">
+              <div class="card-header">
+                <h3 class="card-title">✅ Next Steps générés</h3>
+                <span id="r-steps-count" class="badge badge-info">0 actions</span>
+              </div>
+              <div id="r-steps-list"></div>
+              <div style="margin-top: 16px;">
+                <button class="btn btn-primary" onclick="goToReco()">Voir toutes les recommandations →</button>
+              </div>
+            </div>
+
+          </div><!-- /ai-result -->
+        </div><!-- /tab-analyse -->
+
+
+        <!-- ═══════════════════════════════════════════════
+             TAB 2 — HISTORIQUE
+        ═══════════════════════════════════════════════ -->
+        <div id="tab-historique" class="tab-content">
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title">📋 Appels analysés</h3>
+              <button class="btn btn-outline" onclick="clearHistory()" style="font-size: 13px; padding: 8px 16px;">🗑️ Vider l'historique</button>
+            </div>
+            <div id="call-history-list">
+              <div style="text-align: center; padding: 48px; color: var(--text-gray);">
+                <div style="font-size: 48px; margin-bottom: 12px;">📭</div>
+                <p style="font-weight: 600;">Aucun appel analysé pour l'instant.</p>
+                <p style="margin-top: 8px; font-size: 14px;">Analysez votre premier transcript dans l'onglet "Analyser un appel".</p>
+              </div>
+            </div>
+          </div>
+        </div><!-- /tab-historique -->
+
+
+        <!-- ═══════════════════════════════════════════════
+             TAB 3 — INTERFACE TÉLÉPHONIQUE (existante)
+        ═══════════════════════════════════════════════ -->
+        <div id="tab-interface" class="tab-content">
+          <div class="card">
+            <div class="call-interface">
+              <div class="call-avatar">SM</div>
+              <h2 style="font-size: 28px; margin-bottom: 8px;">Sophie Martin</h2>
+              <p class="call-status">Appel entrant...</p>
+              <div class="call-controls">
+                <button class="call-btn call-btn-answer" onclick="answerCall()">
+                  <svg width="32" height="32" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>
+                </button>
+                <button class="call-btn call-btn-mute">
+                  <svg width="32" height="32" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/></svg>
+                </button>
+                <button class="call-btn call-btn-decline" onclick="declineCall()">
+                  <svg width="32" height="32" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 8l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2M5 3a2 2 0 00-2 2v1c0 8.284 6.716 15 15 15h1a2 2 0 002-2v-3.28a1 1 0 00-.684-.948l-4.493-1.498a1 1 0 00-1.21.502l-1.13 2.257a11.042 11.042 0 01-5.516-5.517l2.257-1.128a1 1 0 00.502-1.21L9.228 3.683A1 1 0 008.279 3H5z"/></svg>
+                </button>
+              </div>
+              <div class="keypad">
+                <button class="keypad-btn">1</button><button class="keypad-btn">2</button>
+                <button class="keypad-btn">3</button><button class="keypad-btn">4</button>
+                <button class="keypad-btn">5</button><button class="keypad-btn">6</button>
+                <button class="keypad-btn">7</button><button class="keypad-btn">8</button>
+                <button class="keypad-btn">9</button><button class="keypad-btn">*</button>
+                <button class="keypad-btn">0</button><button class="keypad-btn">#</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="card" style="margin-top: 0;">
+            <div class="card-header"><h3 class="card-title">Appels récents</h3></div>
+            <div class="table-container">
+              <table>
+                <thead><tr><th>Contact</th><th>Type</th><th>Durée</th><th>Date</th><th>Statut</th></tr></thead>
+                <tbody>
+                  <tr><td>Sophie Martin</td><td>Sortant</td><td>12:34</td><td>20/11/2025 14:32</td><td><span class="badge badge-success">Répondu</span></td></tr>
+                  <tr><td>Pierre Dupont</td><td>Entrant</td><td>08:15</td><td>20/11/2025 11:20</td><td><span class="badge badge-success">Répondu</span></td></tr>
+                  <tr><td>Marie Leroy</td><td>Sortant</td><td>—</td><td>20/11/2025 09:45</td><td><span class="badge badge-danger">Manqué</span></td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div><!-- /tab-interface -->
+
+      </div><!-- /content -->
+    </main>
+  </div>
+
+  <!-- Toast notification -->
+  <div class="toast" id="toast">
+    <span id="toast-icon">✅</span>
+    <span id="toast-msg">Succès !</span>
+  </div>
+
+  <!-- ── MODAL détail appel historique ── -->
+  <div class="modal" id="call-detail-modal">
+    <div class="modal-content" style="max-width: 720px;">
+      <div class="modal-header">
+        <h2 id="modal-call-title">Détail de l'appel</h2>
+        <button class="modal-close" onclick="closeCallModal()">&times;</button>
+      </div>
+      <div class="modal-body" id="modal-call-body"></div>
+    </div>
+  </div>
+
+  <script src="ai-engine.js"></script>
+  <script src="main.js"></script>
+  <script>
+    // ── State ──────────────────────────────────────────────
+    let lastResult = null;
+
+    // ── Update sidebar badge ───────────────────────────────
+    function refreshBadge() {
+      const steps = S360AI.loadData(S360AI.STORAGE_NEXT_STEPS);
+      const pending = steps.filter(s => !s.done).length;
+      const badge = document.getElementById('sidebar-badge');
+      if (badge) {
+        badge.textContent = pending;
+        badge.style.display = pending > 0 ? 'inline-block' : 'none';
+      }
+    }
+
+    // ── Tab switcher ───────────────────────────────────────
+    function switchTab(name, btn) {
+      document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.getElementById('tab-' + name).classList.add('active');
+      btn.classList.add('active');
+      if (name === 'historique') renderHistory();
+    }
+
+    // ── File drag/drop ─────────────────────────────────────
+    const dropZone = document.getElementById('drop-zone');
+    const fileInput = document.getElementById('file-input');
+
+    dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
+    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+    dropZone.addEventListener('drop', e => {
+      e.preventDefault();
+      dropZone.classList.remove('dragover');
+      const file = e.dataTransfer.files[0];
+      if (file) readFile(file);
+    });
+
+    fileInput.addEventListener('change', () => {
+      if (fileInput.files[0]) readFile(fileInput.files[0]);
+    });
+
+    function readFile(file) {
+      const reader = new FileReader();
+      reader.onload = e => {
+        document.getElementById('transcript-input').value = e.target.result;
+        showToast(`✅ Fichier "${file.name}" chargé`);
+      };
+      reader.readAsText(file);
+    }
+
+    // ── Main analysis ──────────────────────────────────────
+    async function startAnalysis() {
+      const text = document.getElementById('transcript-input').value.trim();
+      const caller = document.getElementById('caller-name').value.trim();
+
+      if (!text || text.length < 30) {
+        showToast('⚠️ Le transcript est trop court (minimum 30 caractères)', 'warning');
+        return;
+      }
+
+      // Show loading
+      document.getElementById('ai-loading').style.display = 'flex';
+      document.getElementById('ai-result').style.display = 'none';
+      document.getElementById('btn-analyze').disabled = true;
+
+      try {
+        const res = await S360AI.analyzeTranscript(text, caller);
+        lastResult = res;
+        renderResult(res.analysis, res.nextSteps);
+        refreshBadge();
+        showToast('✅ Analyse terminée ! Prospect et next steps créés.');
+      } catch (err) {
+        showToast('❌ Erreur : ' + err.message, 'error');
+        console.error(err);
+      } finally {
+        document.getElementById('ai-loading').style.display = 'none';
+        document.getElementById('btn-analyze').disabled = false;
+      }
+    }
+
+    // ── Render result ──────────────────────────────────────
+    function renderResult(analysis, steps) {
+      const p = analysis.prospect || {};
+      const cs = analysis.callSummary || {};
+
+      // Badge status
+      const badge = document.getElementById('result-badge');
+      const statusMap = { 'Chaud': 'chaud', 'Intéressé': 'interesse', 'Client': 'client' };
+      const badgeClass = statusMap[p.status] || 'prospect';
+      badge.className = `prospect-badge ${badgeClass}`;
+      badge.textContent = p.status || 'Prospect';
+
+      // Info fields
+      setText('r-name',    p.name    || '—');
+      setText('r-company', p.company || '—');
+      setText('r-email',   p.email   || '—');
+      setText('r-phone',   p.phone   || '—');
+      setText('r-value',   p.estimatedValue ? `€${p.estimatedValue.toLocaleString('fr-FR')}` : '—');
+      setText('r-stage',   analysis.pipelineStage || '—');
+      setText('r-outcome', cs.outcome || '—');
+      setText('r-notes',   p.notes   || '—');
+
+      // Sentiment
+      const sent = document.getElementById('r-sentiment');
+      const sentClass = { positif: 'positif', neutre: 'neutre', négatif: 'negatif' }[cs.sentiment] || 'neutre';
+      const sentEmoji = { positif: '😊', neutre: '😐', négatif: '😟' }[cs.sentiment] || '😐';
+      sent.innerHTML = `<span class="sentiment-pill ${sentClass}">${sentEmoji} ${cs.sentiment || 'neutre'}</span>`;
+
+      // Key points
+      const kpList = document.getElementById('r-keypoints');
+      kpList.innerHTML = (cs.keyPoints || []).map(k => `<li>• ${k}</li>`).join('');
+
+      // Objections
+      const objList = document.getElementById('r-objections');
+      const objWrap = document.getElementById('r-objections-wrap');
+      if (cs.objections && cs.objections.length > 0) {
+        objWrap.style.display = 'block';
+        objList.innerHTML = cs.objections.map(o => `<li style="border-left-color:#ef4444">⚠️ ${o}</li>`).join('');
+      } else { objWrap.style.display = 'none'; }
+
+      // Steps
+      document.getElementById('r-steps-count').textContent = `${steps.length} action${steps.length > 1 ? 's' : ''}`;
+      const icons = { urgent: '⚡', 'follow-up': '📅', opportunity: '🎯', risk: '⚠️' };
+      document.getElementById('r-steps-list').innerHTML = steps.map(s => `
+        <div class="step-mini ${s.type}">
+          <div class="step-mini-icon">${icons[s.type] || '✅'}</div>
+          <div>
+            <div class="step-mini-title">${s.title}</div>
+            <div class="step-mini-desc">${s.description}</div>
+            <div class="step-mini-due">📅 ${formatDate(s.dueDate)} · ${s.estimatedValue ? `💰 €${s.estimatedValue.toLocaleString('fr-FR')}` : ''}</div>
+          </div>
+        </div>
+      `).join('');
+
+      document.getElementById('ai-result').style.display = 'block';
+      document.getElementById('ai-result').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    // ── Helpers ────────────────────────────────────────────
+    function setText(id, val) { const el = document.getElementById(id); if (el) el.textContent = val; }
+    function formatDate(d) {
+      if (!d) return '—';
+      try { return new Date(d).toLocaleDateString('fr-FR', { day:'2-digit', month:'short', year:'numeric' }); }
+      catch { return d; }
+    }
+
+    function clearForm() {
+      document.getElementById('transcript-input').value = '';
+      document.getElementById('caller-name').value = '';
+      document.getElementById('ai-result').style.display = 'none';
+      fileInput.value = '';
+    }
+
+    function goToContacts()     { window.location.href = 'contacts.html'; }
+    function goToReco()         { window.location.href = 'recommendations.html'; }
+
+    // ── Render history ─────────────────────────────────────
+    function renderHistory() {
+      const calls = S360AI.loadData(S360AI.STORAGE_CALLS);
+      const container = document.getElementById('call-history-list');
+
+      if (!calls.length) {
+        container.innerHTML = `<div style="text-align:center;padding:48px;color:var(--text-gray);">
+          <div style="font-size:48px;margin-bottom:12px">📭</div>
+          <p style="font-weight:600">Aucun appel analysé pour l'instant.</p>
+        </div>`;
+        return;
+      }
+
+      container.innerHTML = calls.map(c => {
+        const p = c.analysis?.prospect || {};
+        const initials = (p.name || '??').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+        const sentiment = c.analysis?.callSummary?.sentiment || 'neutre';
+        const sentEmoji = { positif: '😊', neutre: '😐', négatif: '😟' }[sentiment] || '😐';
+        const steps = (S360AI.loadData(S360AI.STORAGE_NEXT_STEPS)).filter(s => s.callId === c.id);
+        const pending = steps.filter(s => !s.done).length;
+        return `
+          <div class="call-history-item" onclick="openCallDetail('${c.id}')">
+            <div class="call-hist-left">
+              <div class="call-hist-avatar">${initials}</div>
+              <div>
+                <div class="call-hist-name">${p.name || 'Inconnu'} ${p.company ? '— ' + p.company : ''}</div>
+                <div class="call-hist-date">${new Date(c.date).toLocaleString('fr-FR')}${p.estimatedValue ? ` · €${p.estimatedValue.toLocaleString('fr-FR')}` : ''}</div>
+              </div>
+            </div>
+            <div style="display:flex;gap:8px;align-items:center;flex-shrink:0">
+              <span style="font-size:20px">${sentEmoji}</span>
+              ${pending > 0 ? `<span class="badge badge-warning">${pending} action${pending>1?'s':''}</span>` : '<span class="badge badge-success">✓ Done</span>'}
+              <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+            </div>
+          </div>`;
+      }).join('');
+    }
+
+    // ── Open call detail modal ─────────────────────────────
+    function openCallDetail(callId) {
+      const calls = S360AI.loadData(S360AI.STORAGE_CALLS);
+      const call  = calls.find(c => c.id === callId);
+      if (!call) return;
+
+      const p  = call.analysis?.prospect || {};
+      const cs = call.analysis?.callSummary || {};
+      const steps = S360AI.loadData(S360AI.STORAGE_NEXT_STEPS).filter(s => s.callId === callId);
+      const icons = { urgent: '⚡', 'follow-up': '📅', opportunity: '🎯', risk: '⚠️' };
+
+      document.getElementById('modal-call-title').textContent = `${p.name || 'Inconnu'} — ${new Date(call.date).toLocaleString('fr-FR')}`;
+      document.getElementById('modal-call-body').innerHTML = `
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px">
+          <div>
+            <div class="section-label">Prospect</div>
+            <div class="info-row"><span>Nom</span><span>${p.name||'—'}</span></div>
+            <div class="info-row"><span>Société</span><span>${p.company||'—'}</span></div>
+            <div class="info-row"><span>Valeur</span><span>${p.estimatedValue?'€'+p.estimatedValue.toLocaleString('fr-FR'):'—'}</span></div>
+          </div>
+          <div>
+            <div class="section-label">Appel</div>
+            <div class="info-row"><span>Sentiment</span><span>${cs.sentiment||'—'}</span></div>
+            <div class="info-row"><span>Résultat</span><span style="max-width:180px;text-align:right">${cs.outcome||'—'}</span></div>
+          </div>
+        </div>
+        <div class="section-label">Next Steps (${steps.length})</div>
+        ${steps.map(s => `<div class="step-mini ${s.type}" style="margin-bottom:8px">
+          <div class="step-mini-icon">${icons[s.type]||'✅'}</div>
+          <div>
+            <div class="step-mini-title" style="text-decoration:${s.done?'line-through':'none'}">${s.title}</div>
+            <div class="step-mini-due">${formatDate(s.dueDate)} ${s.done?'· <span style="color:#10b981">✓ Terminé</span>':''}</div>
+          </div>
+        </div>`).join('')}
+        <div class="section-label" style="margin-top:20px">Transcript</div>
+        <pre style="background:var(--bg-light);padding:16px;border-radius:var(--radius-md);font-size:13px;line-height:1.7;white-space:pre-wrap;max-height:200px;overflow-y:auto;color:var(--text-gray)">${call.transcript}</pre>
+      `;
+      document.getElementById('call-detail-modal').style.display = 'block';
+    }
+    function closeCallModal() { document.getElementById('call-detail-modal').style.display = 'none'; }
+
+    // ── Clear history ──────────────────────────────────────
+    function clearHistory() {
+      if (confirm('Vider tout l\'historique des appels ? (les contacts et next steps seront conservés)')) {
+        S360AI.saveData(S360AI.STORAGE_CALLS, []);
+        renderHistory();
+        showToast('🗑️ Historique vidé');
+      }
+    }
+
+    // ── Toast helper ───────────────────────────────────────
+    function showToast(msg, type = 'success') {
+      const toast = document.getElementById('toast');
+      const bg = { success: '#065f46', warning: '#92400e', error: '#991b1b' }[type] || '#065f46';
+      toast.style.background = bg;
+      document.getElementById('toast-msg').textContent = msg;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 3500);
+    }
+
+    window.addEventListener('click', e => {
+      if (e.target === document.getElementById('call-detail-modal'))
+        closeCallModal();
+    });
+
+    // ── Init ───────────────────────────────────────────────
+    refreshBadge();
+
+    // Expose functions
+    window.startAnalysis = startAnalysis;
+    window.clearForm     = clearForm;
+    window.goToContacts  = goToContacts;
+    window.goToReco      = goToReco;
+    window.switchTab     = switchTab;
+    window.clearHistory  = clearHistory;
+    window.openCallDetail= openCallDetail;
+    window.closeCallModal= closeCallModal;
+    window.showToast     = showToast;
+  </script>
+</body>
+</html>

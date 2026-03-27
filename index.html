@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sales360 - Accueil</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="logo">
+        <div class="logo-icon">S3</div>
+        <span>Sales360</span>
+      </div>
+      
+      <nav>
+        <ul class="nav-menu">
+          <li class="nav-item">
+            <a href="index.html" class="nav-link">
+              <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+              </svg>
+              <span>Accueil</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="dashboard.html" class="nav-link">
+              <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+              </svg>
+              <span data-i18n="dashboard">Tableau de bord</span>
+            </a>
+          </li>
+          <!-- Adding recommendations link to sidebar for consistency -->
+          <li class="nav-item">
+            <a href="recommendations.html" class="nav-link">
+              <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
+              </svg>
+              <span data-i18n="recommendations">Recommandations</span>
+              <span class="nav-badge">12</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="contacts.html" class="nav-link">
+              <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+              </svg>
+              <span data-i18n="contacts">Contacts</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="pipeline.html" class="nav-link">
+              <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+              </svg>
+              <span data-i18n="pipeline">Pipeline</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="telephony.html" class="nav-link">
+              <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path>
+              </svg>
+              <span data-i18n="telephony">Téléphonie</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="visio.html" class="nav-link">
+              <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+              </svg>
+              <span data-i18n="visio">Visioconférence</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="settings.html" class="nav-link">
+              <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+              </svg>
+              <span data-i18n="settings">Paramètres</span>
+            </a>
+          </li>
+        </ul>
+      </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <!-- Topbar -->
+      <header class="topbar">
+        <div class="topbar-left">
+          <h1>Sales360</h1>
+        </div>
+        <div class="topbar-right">
+          <div class="lang-switch">
+            <button class="lang-btn active" data-lang="fr">FR</button>
+            <button class="lang-btn" data-lang="en">EN</button>
+          </div>
+          <div class="user-profile">
+            <div class="user-avatar">JD</div>
+          </div>
+        </div>
+      </header>
+
+      <!-- Content -->
+      <div class="content">
+        <!-- Hero Section -->
+        <section class="hero-section">
+          <h1 class="hero-title" data-i18n="heroTitle">Gérez vos ventes comme jamais auparavant</h1>
+          <p class="hero-subtitle" data-i18n="heroSubtitle">La solution tout-en-un pour votre équipe commerciale</p>
+          <div class="hero-buttons">
+            <a href="dashboard.html" class="btn btn-primary hero-btn" data-i18n="getStarted">Commencer</a>
+            <button class="btn btn-secondary hero-btn" data-i18n="learnMore">En savoir plus</button>
+          </div>
+        </section>
+
+        <!-- Making feature cards clickable and linking them to sidebar pages -->
+        <!-- Features Grid -->
+        <div class="features-grid">
+          <a href="dashboard.html" class="feature-card card" style="text-decoration: none; color: inherit; cursor: pointer; transition: all 0.3s ease;">
+            <div class="feature-icon">📊</div>
+            <h3 class="feature-title" data-i18n="feature1Title">Tableau de bord</h3>
+            <p class="feature-description" data-i18n="feature1Desc">Suivez vos performances et statistiques en temps réel</p>
+          </a>
+
+          <a href="recommendations.html" class="feature-card card" style="text-decoration: none; color: inherit; cursor: pointer; transition: all 0.3s ease; position: relative;">
+            <div class="feature-icon">💡</div>
+            <h3 class="feature-title" data-i18n="feature5Title">Recommandations</h3>
+            <p class="feature-description" data-i18n="feature5Desc">Actions intelligentes pour optimiser vos ventes</p>
+            <span class="badge badge-danger" style="position: absolute; top: 20px; right: 20px;">12 nouvelles</span>
+          </a>
+
+          <a href="contacts.html" class="feature-card card" style="text-decoration: none; color: inherit; cursor: pointer; transition: all 0.3s ease;">
+            <div class="feature-icon">👥</div>
+            <h3 class="feature-title" data-i18n="feature6Title">Contacts</h3>
+            <p class="feature-description" data-i18n="feature6Desc">Gérez tous vos contacts et prospects en un seul endroit</p>
+          </a>
+
+          <a href="pipeline.html" class="feature-card card" style="text-decoration: none; color: inherit; cursor: pointer; transition: all 0.3s ease;">
+            <div class="feature-icon">📋</div>
+            <h3 class="feature-title" data-i18n="feature7Title">Pipeline</h3>
+            <p class="feature-description" data-i18n="feature7Desc">Visualisez et gérez vos opportunités commerciales</p>
+          </a>
+
+          <a href="telephony.html" class="feature-card card" style="text-decoration: none; color: inherit; cursor: pointer; transition: all 0.3s ease;">
+            <div class="feature-icon">📞</div>
+            <h3 class="feature-title" data-i18n="feature2Title">Téléphonie</h3>
+            <p class="feature-description" data-i18n="feature2Desc">Appelez directement depuis l'application</p>
+          </a>
+
+          <a href="visio.html" class="feature-card card" style="text-decoration: none; color: inherit; cursor: pointer; transition: all 0.3s ease;">
+            <div class="feature-icon">🎥</div>
+            <h3 class="feature-title" data-i18n="feature3Title">Visioconférence</h3>
+            <p class="feature-description" data-i18n="feature3Desc">Organisez des réunions vidéo avec vos clients</p>
+          </a>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="main.js"></script>
+</body>
+</html>

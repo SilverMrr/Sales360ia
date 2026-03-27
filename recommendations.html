@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sales360 - Recommandations</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .step-done-overlay { opacity: 0.45; }
+    .step-done-overlay .reco-title { text-decoration: line-through; }
+
+    .done-tag {
+      display: inline-flex; align-items: center; gap: 4px;
+      background: #d1fae5; color: #065f46; font-size: 11px;
+      font-weight: 700; padding: 3px 10px; border-radius: 12px;
+    }
+
+    .reco-contact-chip {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: var(--bg-light); padding: 4px 12px;
+      border-radius: 20px; font-size: 13px; font-weight: 600;
+      color: var(--text-gray); margin-bottom: 10px;
+    }
+
+    .empty-reco {
+      text-align: center; padding: 80px 32px; color: var(--text-gray);
+    }
+    .empty-reco .big-icon { font-size: 64px; margin-bottom: 16px; }
+
+    .progress-bar-wrap {
+      height: 6px; background: var(--border-light);
+      border-radius: 4px; overflow: hidden; margin-top: 4px;
+    }
+    .progress-bar-fill {
+      height: 100%; background: var(--accent-orange);
+      border-radius: 4px; transition: width 0.4s ease;
+    }
+  </style>
+</head>
+<body>
+<div class="app-container">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="logo">
+      <div class="logo-icon">S3</div>
+      <span>Sales360</span>
+    </div>
+    <nav>
+      <ul class="nav-menu">
+        <li class="nav-item"><a href="index.html" class="nav-link">
+          <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+          <span>Accueil</span>
+        </a></li>
+        <li class="nav-item"><a href="dashboard.html" class="nav-link">
+          <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+          <span>Tableau de bord</span>
+        </a></li>
+        <li class="nav-item"><a href="contacts.html" class="nav-link">
+          <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+          <span>Contacts</span>
+        </a></li>
+        <li class="nav-item"><a href="pipeline.html" class="nav-link">
+          <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+          <span>Pipeline</span>
+        </a></li>
+        <li class="nav-item"><a href="telephony.html" class="nav-link">
+          <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>
+          <span>Téléphonie</span>
+        </a></li>
+        <li class="nav-item"><a href="visio.html" class="nav-link">
+          <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+          <span>Visioconférence</span>
+        </a></li>
+        <li class="nav-item"><a href="recommendations.html" class="nav-link active">
+          <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
+          <span>Recommandations</span>
+          <span class="nav-badge" id="sidebar-badge" style="display:none">0</span>
+        </a></li>
+        <li class="nav-item"><a href="settings.html" class="nav-link">
+          <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+          <span>Paramètres</span>
+        </a></li>
+      </ul>
+    </nav>
+  </aside>
+
+  <main class="main-content">
+    <header class="topbar">
+      <div class="topbar-left"><h1>Recommandations IA</h1></div>
+      <div class="topbar-right">
+        <button class="btn btn-outline" onclick="clearDoneSteps()" style="font-size:13px;padding:8px 16px">🗑️ Effacer les terminés</button>
+        <button class="btn btn-primary" onclick="window.location.href='telephony.html'" style="font-size:13px;padding:8px 16px">+ Analyser un appel</button>
+        <div class="user-profile"><div class="user-avatar">JD</div></div>
+      </div>
+    </header>
+
+    <div class="content">
+
+      <!-- Summary stats -->
+      <div class="reco-summary" id="reco-summary">
+        <div class="reco-summary-item">
+          <div class="reco-summary-count" id="stat-urgent">0</div>
+          <div class="reco-summary-label">Actions urgentes</div>
+        </div>
+        <div class="reco-summary-item">
+          <div class="reco-summary-count" id="stat-followup">0</div>
+          <div class="reco-summary-label">Relances à faire</div>
+        </div>
+        <div class="reco-summary-item">
+          <div class="reco-summary-count" id="stat-opps">0</div>
+          <div class="reco-summary-label">Opportunités</div>
+        </div>
+        <div class="reco-summary-item" style="background: linear-gradient(135deg,#065f46,#047857)">
+          <div class="reco-summary-count" id="stat-done">0</div>
+          <div class="reco-summary-label">Terminées</div>
+          <div class="progress-bar-wrap" style="margin-top:8px">
+            <div class="progress-bar-fill" id="progress-fill" style="width:0%;background:rgba(255,255,255,0.7)"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Filters -->
+      <div class="reco-filters">
+        <button class="filter-btn active" data-filter="pending" onclick="setFilter('pending',this)">En attente</button>
+        <button class="filter-btn" data-filter="urgent"  onclick="setFilter('urgent',this)">⚡ Urgentes</button>
+        <button class="filter-btn" data-filter="follow-up" onclick="setFilter('follow-up',this)">📅 Relances</button>
+        <button class="filter-btn" data-filter="opportunity" onclick="setFilter('opportunity',this)">🎯 Opportunités</button>
+        <button class="filter-btn" data-filter="risk"    onclick="setFilter('risk',this)">⚠️ Risques</button>
+        <button class="filter-btn" data-filter="done"    onclick="setFilter('done',this)">✅ Terminées</button>
+        <button class="filter-btn" data-filter="all"     onclick="setFilter('all',this)">Toutes</button>
+      </div>
+
+      <!-- Grid -->
+      <div class="reco-grid" id="reco-grid"></div>
+
+    </div>
+  </main>
+</div>
+
+<script src="ai-engine.js"></script>
+<script src="main.js"></script>
+<script>
+  let currentFilter = 'pending';
+
+  const TYPE_ICONS = { urgent:'⚡', 'follow-up':'📅', opportunity:'🎯', risk:'⚠️' };
+  const TYPE_LABELS = { urgent:'Urgent', 'follow-up':'Relance', opportunity:'Opportunité', risk:'À risque' };
+  const BADGE_CLASS = { urgent:'reco-badge-urgent', 'follow-up':'reco-badge-follow-up', opportunity:'reco-badge-opportunity', risk:'reco-badge-risk' };
+  const CARD_CLASS  = { urgent:'reco-urgent', 'follow-up':'reco-follow-up', opportunity:'reco-opportunity', risk:'reco-risk' };
+
+  function formatDate(d) {
+    if (!d) return '—';
+    try {
+      const dt = new Date(d);
+      const today = new Date(); today.setHours(0,0,0,0);
+      const diff  = Math.round((dt - today) / 86400000);
+      if (diff === 0) return "Aujourd'hui";
+      if (diff === 1) return "Demain";
+      if (diff === -1) return "Hier";
+      if (diff < 0)  return `Il y a ${Math.abs(diff)} jours`;
+      if (diff < 7)  return `Dans ${diff} jours`;
+      return dt.toLocaleDateString('fr-FR', { day:'2-digit', month:'short' });
+    } catch { return d; }
+  }
+
+  function isOverdue(d) {
+    if (!d) return false;
+    try { return new Date(d) < new Date(); } catch { return false; }
+  }
+
+  function loadAndRender() {
+    const steps = S360AI.loadData(S360AI.STORAGE_NEXT_STEPS);
+    const pending = steps.filter(s => !s.done);
+    const done    = steps.filter(s =>  s.done);
+    const total   = steps.length;
+
+    // Stats
+    document.getElementById('stat-urgent').textContent  = pending.filter(s => s.type === 'urgent').length;
+    document.getElementById('stat-followup').textContent = pending.filter(s => s.type === 'follow-up').length;
+    document.getElementById('stat-opps').textContent     = pending.filter(s => s.type === 'opportunity').length;
+    document.getElementById('stat-done').textContent     = done.length;
+    document.getElementById('progress-fill').style.width = total > 0 ? Math.round(done.length/total*100)+'%' : '0%';
+
+    // Sidebar badge
+    const badge = document.getElementById('sidebar-badge');
+    if (badge) { badge.textContent = pending.length; badge.style.display = pending.length > 0 ? 'inline-block' : 'none'; }
+
+    // Filter
+    let filtered;
+    if (currentFilter === 'pending')    filtered = pending;
+    else if (currentFilter === 'done')  filtered = done;
+    else if (currentFilter === 'all')   filtered = steps;
+    else filtered = pending.filter(s => s.type === currentFilter);
+
+    renderGrid(filtered);
+  }
+
+  function renderGrid(steps) {
+    const grid = document.getElementById('reco-grid');
+
+    if (!steps.length) {
+      grid.innerHTML = `<div style="grid-column:1/-1">
+        <div class="empty-reco">
+          <div class="big-icon">${currentFilter === 'done' ? '🎉' : '✅'}</div>
+          <p style="font-weight:700;font-size:20px;margin-bottom:8px">
+            ${currentFilter === 'done' ? 'Aucune action terminée' : 'Aucune action en attente'}
+          </p>
+          <p style="font-size:15px;margin-bottom:24px">
+            ${currentFilter === 'done' ? 'Vous n\'avez pas encore marqué d\'action comme terminée.' :
+              'Tous vos next steps sont à jour — ou analysez un nouvel appel pour en générer.'}
+          </p>
+          <button class="btn btn-primary" onclick="window.location.href='telephony.html'">
+            📄 Analyser un appel
+          </button>
+        </div>
+      </div>`;
+      return;
+    }
+
+    grid.innerHTML = steps.map(s => {
+      const cardClass  = s.done ? 'reco-follow-up step-done-overlay' : (CARD_CLASS[s.type] || '');
+      const badgeClass = BADGE_CLASS[s.type] || 'reco-badge-follow-up';
+      const icon       = TYPE_ICONS[s.type] || '✅';
+      const label      = TYPE_LABELS[s.type] || s.type;
+      const overdue    = !s.done && isOverdue(s.dueDate);
+      const val        = s.estimatedValue ? `€${Number(s.estimatedValue).toLocaleString('fr-FR')}` : '';
+
+      return `
+        <div class="reco-card ${cardClass}" id="card-${s.id}">
+          <div class="reco-icon">${icon}</div>
+          <div class="reco-content">
+            <div class="reco-header">
+              <h3 class="reco-title">${s.title}</h3>
+              ${s.done
+                ? '<span class="done-tag">✓ Terminé</span>'
+                : `<span class="reco-badge ${badgeClass}">${label}</span>`
+              }
+            </div>
+            ${s.contactName ? `<div class="reco-contact-chip">👤 ${s.contactName}</div>` : ''}
+            <p class="reco-description">${s.description}</p>
+            <div class="reco-meta">
+              <span class="reco-time" style="${overdue?'color:#ef4444;font-weight:700':''}">
+                ⏰ ${formatDate(s.dueDate)}${overdue?' — EN RETARD':''}
+              </span>
+              ${val ? `<span class="reco-value">💰 ${val}</span>` : ''}
+            </div>
+            <div class="reco-actions">
+              ${!s.done ? `
+                <button class="btn btn-primary" onclick="markDone('${s.id}')">✓ Marquer comme fait</button>
+                <button class="btn btn-outline"  onclick="viewContact('${s.contactName}')">👤 Voir contact</button>
+              ` : `
+                <button class="btn btn-outline" onclick="undoDone('${s.id}')">↩ Remettre en attente</button>
+              `}
+              <button class="btn" style="background:#fee2e2;color:#991b1b;padding:10px 14px" onclick="deleteStep('${s.id}')" title="Supprimer">🗑️</button>
+            </div>
+          </div>
+        </div>`;
+    }).join('');
+  }
+
+  function setFilter(f, btn) {
+    currentFilter = f;
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    loadAndRender();
+  }
+
+  function markDone(id) {
+    S360AI.markStepDone(id);
+    loadAndRender();
+  }
+
+  function undoDone(id) {
+    const steps = S360AI.loadData(S360AI.STORAGE_NEXT_STEPS);
+    const idx = steps.findIndex(s => s.id === id);
+    if (idx >= 0) { steps[idx].done = false; delete steps[idx].doneAt; S360AI.saveData(S360AI.STORAGE_NEXT_STEPS, steps); }
+    loadAndRender();
+  }
+
+  function deleteStep(id) {
+    if (confirm('Supprimer ce next step ?')) { S360AI.deleteStep(id); loadAndRender(); }
+  }
+
+  function viewContact(name) {
+    if (!name) return;
+    window.location.href = 'contacts.html';
+  }
+
+  function clearDoneSteps() {
+    const steps = S360AI.loadData(S360AI.STORAGE_NEXT_STEPS);
+    const remaining = steps.filter(s => !s.done);
+    if (steps.length === remaining.length) { alert('Aucune action terminée à effacer.'); return; }
+    if (confirm(`Supprimer ${steps.length - remaining.length} action(s) terminée(s) ?`)) {
+      S360AI.saveData(S360AI.STORAGE_NEXT_STEPS, remaining);
+      loadAndRender();
+    }
+  }
+
+  // Init
+  loadAndRender();
+
+  window.markDone       = markDone;
+  window.undoDone       = undoDone;
+  window.deleteStep     = deleteStep;
+  window.viewContact    = viewContact;
+  window.setFilter      = setFilter;
+  window.clearDoneSteps = clearDoneSteps;
+</script>
+</body>
+</html>

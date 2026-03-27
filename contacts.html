@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sales360 - Contacts</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .contacts-toolbar {
+      display: flex; gap: 16px; flex-wrap: wrap; align-items: center; margin-bottom: 20px;
+    }
+    .contacts-toolbar .form-input { max-width: 320px; }
+    .contacts-toolbar select       { max-width: 180px; }
+
+    /* Avatar colors */
+    .av-0 { background: linear-gradient(135deg, #f97316, #fbbf24); }
+    .av-1 { background: linear-gradient(135deg, #3b82f6, #8b5cf6); }
+    .av-2 { background: linear-gradient(135deg, #10b981, #06b6d4); }
+    .av-3 { background: linear-gradient(135deg, #ef4444, #f97316); }
+    .av-4 { background: linear-gradient(135deg, #8b5cf6, #ec4899); }
+    .av-5 { background: linear-gradient(135deg, #06b6d4, #3b82f6); }
+
+    .contact-avatar {
+      width: 40px; height: 40px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      color: white; font-weight: 700; font-size: 15px; flex-shrink: 0;
+    }
+    .ai-tag {
+      display: inline-flex; align-items: center; gap: 4px;
+      background: #ede9fe; color: #5b21b6; font-size: 11px;
+      font-weight: 700; padding: 2px 8px; border-radius: 10px; margin-left: 6px;
+    }
+    .empty-state {
+      text-align: center; padding: 64px 32px; color: var(--text-gray);
+    }
+    .empty-state .empty-icon { font-size: 56px; margin-bottom: 16px; }
+    .empty-state p { font-weight: 600; font-size: 18px; margin-bottom: 8px; }
+
+    /* Add contact modal */
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    @media (max-width: 640px) { .form-row { grid-template-columns: 1fr; } }
+
+    .contact-notes-cell {
+      max-width: 240px; white-space: nowrap; overflow: hidden;
+      text-overflow: ellipsis; color: var(--text-gray); font-size: 13px;
+    }
+  </style>
+</head>
+<body>
+<div class="app-container">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="logo">
+      <div class="logo-icon">S3</div>
+      <span>Sales360</span>
+    </div>
+    <nav>
+      <ul class="nav-menu">
+        <li class="nav-item"><a href="index.html" class="nav-link">
+          <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+          <span>Accueil</span>
+        </a></li>
+        <li class="nav-item"><a href="dashboard.html" class="nav-link">
+          <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+          <span>Tableau de bord</span>
+        </a></li>
+        <li class="nav-item"><a href="contacts.html" class="nav-link active">
+          <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+          <span>Contacts</span>
+        </a></li>
+        <li class="nav-item"><a href="pipeline.html" class="nav-link">
+          <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+          <span>Pipeline</span>
+        </a></li>
+        <li class="nav-item"><a href="telephony.html" class="nav-link">
+          <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>
+          <span>Téléphonie</span>
+        </a></li>
+        <li class="nav-item"><a href="visio.html" class="nav-link">
+          <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+          <span>Visioconférence</span>
+        </a></li>
+        <li class="nav-item"><a href="recommendations.html" class="nav-link">
+          <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
+          <span>Recommandations</span>
+          <span class="nav-badge" id="sidebar-badge" style="display:none">0</span>
+        </a></li>
+        <li class="nav-item"><a href="settings.html" class="nav-link">
+          <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+          <span>Paramètres</span>
+        </a></li>
+      </ul>
+    </nav>
+  </aside>
+
+  <main class="main-content">
+    <header class="topbar">
+      <div class="topbar-left">
+        <h1>Gestion des contacts</h1>
+      </div>
+      <div class="topbar-right">
+        <div class="user-profile"><div class="user-avatar">JD</div></div>
+      </div>
+    </header>
+
+    <div class="content">
+      <div class="card">
+        <div class="contacts-toolbar">
+          <input type="text" id="search-input" class="form-input" placeholder="🔍 Rechercher un contact..." oninput="filterContacts()">
+          <select id="status-filter" class="form-input" onchange="filterContacts()">
+            <option value="">Tous les statuts</option>
+            <option value="Client">Client</option>
+            <option value="Prospect">Prospect</option>
+            <option value="Intéressé">Intéressé</option>
+            <option value="Chaud">Chaud</option>
+            <option value="Actif">Actif</option>
+          </select>
+          <select id="source-filter" class="form-input" onchange="filterContacts()">
+            <option value="">Toutes les sources</option>
+            <option value="Appel analysé">🤖 Via IA</option>
+            <option value="Manuel">✍️ Manuel</option>
+          </select>
+          <div style="flex:1"></div>
+          <button class="btn btn-primary" onclick="openAddModal()">+ Ajouter un contact</button>
+        </div>
+
+        <div id="contacts-count" style="font-size:14px;color:var(--text-gray);margin-bottom:16px;"></div>
+
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Nom</th>
+                <th>Email</th>
+                <th>Téléphone</th>
+                <th>Entreprise</th>
+                <th>Valeur est.</th>
+                <th>Statut</th>
+                <th>Source</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="contacts-tbody">
+              <tr><td colspan="8" style="text-align:center;padding:32px;color:var(--text-gray)">Chargement...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- ── Modal Ajouter Contact ── -->
+<div class="modal" id="add-contact-modal">
+  <div class="modal-content" style="max-width:560px">
+    <div class="modal-header">
+      <h2 id="add-modal-title">Ajouter un contact</h2>
+      <button class="modal-close" onclick="closeAddModal()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="edit-contact-id">
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Nom complet *</label>
+          <input type="text" id="add-name" class="form-input" placeholder="Pierre Dupont">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Entreprise</label>
+          <input type="text" id="add-company" class="form-input" placeholder="Innovation Labs">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Email</label>
+          <input type="email" id="add-email" class="form-input" placeholder="p.dupont@company.com">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Téléphone</label>
+          <input type="text" id="add-phone" class="form-input" placeholder="+33 6 12 34 56 78">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Statut</label>
+          <select id="add-status" class="form-input">
+            <option>Prospect</option>
+            <option>Intéressé</option>
+            <option>Chaud</option>
+            <option>Client</option>
+            <option>Actif</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Valeur estimée (€)</label>
+          <input type="number" id="add-value" class="form-input" placeholder="0">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Notes</label>
+        <textarea id="add-notes" class="form-input" rows="3" style="resize:vertical" placeholder="Contexte, besoins, historique..."></textarea>
+      </div>
+      <div style="display:flex;gap:12px;margin-top:8px">
+        <button class="btn btn-primary btn-block" onclick="saveContact()">💾 Enregistrer</button>
+        <button class="btn btn-outline" onclick="closeAddModal()">Annuler</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Modal Fiche Contact ── -->
+<div class="modal" id="contact-modal">
+  <div class="modal-content" style="max-width:680px">
+    <div class="modal-header">
+      <h2 id="contact-modal-title">Fiche contact</h2>
+      <button class="modal-close" onclick="closeContactModal()">&times;</button>
+    </div>
+    <div class="modal-body" id="contact-modal-body"></div>
+  </div>
+</div>
+
+<script src="ai-engine.js"></script>
+<script src="main.js"></script>
+<script>
+  // ── Static seed contacts (shown if no AI contacts yet) ──
+  const SEED_CONTACTS = [
+    { id:'seed-1', name:'Sophie Martin',  company:'TechCorp',           email:'sophie.martin@techcorp.fr',       phone:'+33 6 12 34 56 78', status:'Client',   estimatedValue:25000, source:'Manuel', notes:'Cliente satisfaite depuis 8 mois.' },
+    { id:'seed-2', name:'Pierre Dupont',  company:'Innovation Labs',     email:'p.dupont@innovation.com',          phone:'+33 6 23 45 67 89', status:'Prospect', estimatedValue:67500, source:'Manuel', notes:'Prospect chaud, en attente de proposition.' },
+    { id:'seed-3', name:'Marie Leroy',    company:'StartupXYZ',          email:'marie.l@startupxyz.fr',            phone:'+33 6 34 56 78 90', status:'Client',   estimatedValue:18500, source:'Manuel', notes:'Utilise notre service principal activement.' },
+    { id:'seed-4', name:'Jean Leblanc',   company:'Enterprise Solutions', email:'jean.leblanc@enterprise.com',      phone:'+33 6 45 67 89 01', status:'Actif',    estimatedValue:45000, source:'Manuel', notes:'Renouvellement dans 30 jours.' },
+    { id:'seed-5', name:'Claire Dubois',  company:'Digital Agency',       email:'c.dubois@digitalagency.fr',        phone:'+33 6 56 78 90 12', status:'Prospect', estimatedValue:28000, source:'Manuel', notes:'Prospect qualifié, relance urgente.' },
+    { id:'seed-6', name:'Marc Bernard',   company:'Consulting Group',     email:'marc.b@consulting.com',            phone:'+33 6 67 89 01 23', status:'Client',   estimatedValue:22000, source:'Manuel', notes:'3 licences actives, potentiel d\'expansion.' },
+  ];
+
+  let allContacts = [];
+  let filtered    = [];
+
+  function loadAllContacts() {
+    const aiContacts = S360AI.loadData(S360AI.STORAGE_CONTACTS);
+    // Merge: AI contacts first, then seeds not duplicated
+    const aiNames = aiContacts.map(c => c.name.toLowerCase());
+    const uniqueSeeds = SEED_CONTACTS.filter(s => !aiNames.includes(s.name.toLowerCase()));
+    allContacts = [...aiContacts, ...uniqueSeeds];
+    filtered = [...allContacts];
+  }
+
+  function initBadge() {
+    const steps = S360AI.loadData(S360AI.STORAGE_NEXT_STEPS);
+    const pending = steps.filter(s => !s.done).length;
+    const badge = document.getElementById('sidebar-badge');
+    if (badge) { badge.textContent = pending; badge.style.display = pending > 0 ? 'inline-block' : 'none'; }
+  }
+
+  // ── Render table ───────────────────────────────────────
+  function renderContacts(list) {
+    const tbody = document.getElementById('contacts-tbody');
+    document.getElementById('contacts-count').textContent =
+      `${list.length} contact${list.length > 1 ? 's' : ''}${list.length !== allContacts.length ? ' (filtrés sur ' + allContacts.length + ')' : ''}`;
+
+    if (!list.length) {
+      tbody.innerHTML = `<tr><td colspan="8">
+        <div class="empty-state">
+          <div class="empty-icon">👥</div>
+          <p>Aucun contact trouvé</p>
+          <p style="font-size:14px;margin-top:4px">Analysez un appel ou ajoutez un contact manuellement.</p>
+          <button class="btn btn-primary" style="margin-top:16px" onclick="openAddModal()">+ Ajouter</button>
+        </div>
+      </td></tr>`;
+      return;
+    }
+
+    const statusBadge = s => {
+      const map = {
+        'Client':    'badge-success', 'Chaud':     'badge-danger',
+        'Intéressé': 'badge-warning', 'Prospect':  'badge-warning',
+        'Actif':     'badge-info'
+      };
+      return `<span class="badge ${map[s]||'badge-info'}">${s}</span>`;
+    };
+
+    tbody.innerHTML = list.map((c, i) => {
+      const initials = (c.name||'??').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+      const avClass  = `av-${i % 6}`;
+      const isAI     = c.source === 'Appel analysé';
+      const val      = c.estimatedValue ? `€${Number(c.estimatedValue).toLocaleString('fr-FR')}` : '—';
+      return `<tr>
+        <td>
+          <div style="display:flex;align-items:center;gap:12px">
+            <div class="contact-avatar ${avClass}">${initials}</div>
+            <div>
+              <span style="font-weight:600;color:var(--text-dark)">${c.name}</span>
+              ${isAI ? '<span class="ai-tag">🤖 IA</span>' : ''}
+              ${c.callCount > 1 ? `<span style="font-size:12px;color:var(--text-gray);display:block">${c.callCount} appels analysés</span>` : ''}
+            </div>
+          </div>
+        </td>
+        <td>${c.email||'—'}</td>
+        <td>${c.phone||'—'}</td>
+        <td>${c.company||'—'}</td>
+        <td style="font-weight:600;color:var(--accent-orange)">${val}</td>
+        <td>${statusBadge(c.status||'Prospect')}</td>
+        <td><span style="font-size:12px;color:var(--text-gray)">${c.source||'Manuel'}</span></td>
+        <td>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-secondary" style="padding:8px 12px;font-size:13px" onclick="viewContact('${c.id}')">Voir</button>
+            <button class="btn btn-outline"   style="padding:8px 12px;font-size:13px" onclick="editContact('${c.id}')">✏️</button>
+            <button class="btn" style="padding:8px 12px;font-size:13px;background:#fee2e2;color:#991b1b" onclick="confirmDelete('${c.id}')">🗑️</button>
+          </div>
+        </td>
+      </tr>`;
+    }).join('');
+  }
+
+  // ── Filter ─────────────────────────────────────────────
+  function filterContacts() {
+    const q      = document.getElementById('search-input').value.toLowerCase();
+    const status = document.getElementById('status-filter').value;
+    const source = document.getElementById('source-filter').value;
+
+    filtered = allContacts.filter(c => {
+      const matchQ = !q || [c.name, c.company, c.email, c.phone].some(f => (f||'').toLowerCase().includes(q));
+      const matchS = !status || c.status === status;
+      const matchSrc = !source || c.source === source;
+      return matchQ && matchS && matchSrc;
+    });
+    renderContacts(filtered);
+  }
+
+  // ── View contact (fiche) ───────────────────────────────
+  function viewContact(id) {
+    const c = allContacts.find(x => x.id === id);
+    if (!c) return;
+
+    const steps = S360AI.loadData(S360AI.STORAGE_NEXT_STEPS).filter(s => s.contactId === id || s.contactName === c.name);
+    const pending = steps.filter(s => !s.done);
+    const icons = { urgent:'⚡', 'follow-up':'📅', opportunity:'🎯', risk:'⚠️' };
+
+    document.getElementById('contact-modal-title').textContent = c.name + (c.company ? ` — ${c.company}` : '');
+    document.getElementById('contact-modal-body').innerHTML = `
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px">
+        <div>
+          <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text-light);margin-bottom:8px">Informations</div>
+          <div class="info-row" style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border-light);font-size:14px"><span style="color:var(--text-gray)">Email</span><span style="font-weight:600">${c.email||'—'}</span></div>
+          <div class="info-row" style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border-light);font-size:14px"><span style="color:var(--text-gray)">Téléphone</span><span style="font-weight:600">${c.phone||'—'}</span></div>
+          <div class="info-row" style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border-light);font-size:14px"><span style="color:var(--text-gray)">Statut</span><span style="font-weight:600">${c.status||'—'}</span></div>
+          <div class="info-row" style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border-light);font-size:14px"><span style="color:var(--text-gray)">Valeur</span><span style="font-weight:600;color:var(--accent-orange)">${c.estimatedValue?'€'+Number(c.estimatedValue).toLocaleString('fr-FR'):'—'}</span></div>
+          <div class="info-row" style="display:flex;justify-content:space-between;padding:8px 0;font-size:14px"><span style="color:var(--text-gray)">Appels analysés</span><span style="font-weight:600">${c.callCount||0}</span></div>
+        </div>
+        <div>
+          <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text-light);margin-bottom:8px">Notes</div>
+          <p style="font-size:14px;color:var(--text-gray);line-height:1.7;background:var(--bg-light);padding:12px;border-radius:8px">${c.notes||'Aucune note'}</p>
+        </div>
+      </div>
+      <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text-light);margin-bottom:10px">
+        Next Steps en attente (${pending.length})
+      </div>
+      ${pending.length ? pending.map(s => `
+        <div style="display:flex;gap:12px;align-items:flex-start;padding:12px 14px;border-radius:8px;border-left:4px solid ${s.type==='urgent'?'#ef4444':s.type==='follow-up'?'#3b82f6':s.type==='opportunity'?'#10b981':'#f59e0b'};background:var(--bg-light);margin-bottom:8px">
+          <span style="font-size:20px">${icons[s.type]||'✅'}</span>
+          <div>
+            <div style="font-weight:700;font-size:14px;color:var(--text-dark)">${s.title}</div>
+            <div style="font-size:13px;color:var(--text-gray);margin-top:2px">${s.description}</div>
+            <div style="font-size:12px;color:var(--text-light);margin-top:4px">📅 ${s.dueDate||'—'}</div>
+          </div>
+          <button class="btn btn-outline" style="padding:6px 12px;font-size:12px;margin-left:auto;flex-shrink:0" onclick="markDone('${s.id}','${id}')">✓ Fait</button>
+        </div>`).join('') : `<div style="text-align:center;padding:24px;color:var(--text-gray);font-size:14px">✅ Aucune action en attente</div>`}
+      <div style="display:flex;gap:12px;margin-top:20px">
+        <button class="btn btn-primary" onclick="window.location.href='telephony.html'">📄 Analyser un appel</button>
+        <button class="btn btn-secondary" onclick="editContact('${id}');closeContactModal()">✏️ Modifier</button>
+        <button class="btn btn-outline" style="color:#ef4444;border-color:#ef4444" onclick="confirmDelete('${id}');closeContactModal()">🗑️ Supprimer</button>
+      </div>`;
+
+    document.getElementById('contact-modal').style.display = 'block';
+  }
+
+  function closeContactModal() { document.getElementById('contact-modal').style.display = 'none'; }
+
+  function markDone(stepId, contactId) {
+    S360AI.markStepDone(stepId);
+    closeContactModal();
+    viewContact(contactId);
+  }
+
+  // ── Add / Edit modal ───────────────────────────────────
+  function openAddModal() {
+    document.getElementById('add-modal-title').textContent = 'Ajouter un contact';
+    document.getElementById('edit-contact-id').value = '';
+    ['add-name','add-company','add-email','add-phone','add-notes'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('add-status').value = 'Prospect';
+    document.getElementById('add-value').value = '';
+    document.getElementById('add-contact-modal').style.display = 'block';
+  }
+
+  function editContact(id) {
+    const c = allContacts.find(x => x.id === id);
+    if (!c) return;
+    document.getElementById('add-modal-title').textContent = 'Modifier le contact';
+    document.getElementById('edit-contact-id').value = id;
+    document.getElementById('add-name').value    = c.name    || '';
+    document.getElementById('add-company').value = c.company || '';
+    document.getElementById('add-email').value   = c.email   || '';
+    document.getElementById('add-phone').value   = c.phone   || '';
+    document.getElementById('add-status').value  = c.status  || 'Prospect';
+    document.getElementById('add-value').value   = c.estimatedValue || '';
+    document.getElementById('add-notes').value   = c.notes   || '';
+    document.getElementById('add-contact-modal').style.display = 'block';
+  }
+
+  function closeAddModal() { document.getElementById('add-contact-modal').style.display = 'none'; }
+
+  function saveContact() {
+    const name = document.getElementById('add-name').value.trim();
+    if (!name) { alert('Le nom est obligatoire.'); return; }
+
+    const editId = document.getElementById('edit-contact-id').value;
+    const contacts = S360AI.loadData(S360AI.STORAGE_CONTACTS);
+
+    const data = {
+      name,
+      company:        document.getElementById('add-company').value.trim(),
+      email:          document.getElementById('add-email').value.trim(),
+      phone:          document.getElementById('add-phone').value.trim(),
+      status:         document.getElementById('add-status').value,
+      estimatedValue: parseInt(document.getElementById('add-value').value) || 0,
+      notes:          document.getElementById('add-notes').value.trim(),
+      source:         'Manuel'
+    };
+
+    if (editId) {
+      // Edit existing AI contact
+      const idx = contacts.findIndex(c => c.id === editId);
+      if (idx >= 0) {
+        contacts[idx] = { ...contacts[idx], ...data };
+        S360AI.saveData(S360AI.STORAGE_CONTACTS, contacts);
+      } else {
+        // Edit seed — store in AI contacts
+        contacts.unshift({ id: editId, ...data, createdAt: new Date().toISOString() });
+        S360AI.saveData(S360AI.STORAGE_CONTACTS, contacts);
+      }
+    } else {
+      const newC = { id: 'c-' + Date.now(), ...data, callCount: 0, createdAt: new Date().toISOString() };
+      contacts.unshift(newC);
+      S360AI.saveData(S360AI.STORAGE_CONTACTS, contacts);
+    }
+
+    closeAddModal();
+    loadAllContacts();
+    filterContacts();
+  }
+
+  // ── Delete ─────────────────────────────────────────────
+  function confirmDelete(id) {
+    const c = allContacts.find(x => x.id === id);
+    if (!c) return;
+    if (confirm(`Supprimer "${c.name}" ?`)) {
+      S360AI.deleteContact(id);
+      loadAllContacts();
+      filterContacts();
+    }
+  }
+
+  // ── Init ───────────────────────────────────────────────
+  window.addEventListener('click', e => {
+    if (e.target === document.getElementById('add-contact-modal'))  closeAddModal();
+    if (e.target === document.getElementById('contact-modal'))      closeContactModal();
+  });
+
+  loadAllContacts();
+  filterContacts();
+  initBadge();
+
+  // Expose
+  window.filterContacts  = filterContacts;
+  window.openAddModal    = openAddModal;
+  window.closeAddModal   = closeAddModal;
+  window.saveContact     = saveContact;
+  window.viewContact     = viewContact;
+  window.editContact     = editContact;
+  window.confirmDelete   = confirmDelete;
+  window.closeContactModal = closeContactModal;
+  window.markDone        = markDone;
+</script>
+</body>
+</html>
