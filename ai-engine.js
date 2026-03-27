@@ -1,6 +1,7 @@
 // ============================================================
 // Sales360 — AI Engine (frontend)
 // Les appels Gemini passent uniquement par le backend (/api/*)
+// Fichier canonique (résolution de conflits): conserver cette implémentation unique.
 // ============================================================
 
 const AI_PROVIDER = "gemini";
