@@ -5,6 +5,8 @@
 
 const GEMINI_API_KEY = "AIzaSyD7cBh9d0WgnzQkBRVNZtU8jwJXLKcbFTs";
 const GEMINI_MODEL   = "gemini-2.5-flash";
+const AI_PROVIDER    = "gemini";
+const AI_ENGINE_VERSION = "2026-03-27";
 
 // ── Storage keys ─────────────────────────────────────────────
 const STORAGE_CALLS      = "s360_calls";       // tableau d'appels analysés
@@ -239,6 +241,9 @@ function getStats() {
 
 // ── Expose globalement ────────────────────────────────────────
 window.S360AI = {
+  provider: AI_PROVIDER,
+  model: GEMINI_MODEL,
+  version: AI_ENGINE_VERSION,
   analyzeTranscript,
   upsertContact,
   markStepDone,
