@@ -520,7 +520,6 @@ Pierre : Oui, j'aimerais savoir si on peut intégrer ça avec notre CRM actuel S
     </div>
   </div>
 
-  <script src="ai-engine.js?v=20260327d"></script>
   <script src="main.js"></script>
   <script>
     // ── State ──────────────────────────────────────────────
@@ -532,34 +531,6 @@ Pierre : Oui, j'aimerais savoir si on peut intégrer ça avec notre CRM actuel S
     let recStartedAt = 0;
     let recTimer = null;
 
-    async function fallbackAnalyzeCallAudio(audioBlob, callerId = '') {
-      const mime = audioBlob?.type || 'audio/webm';
-      const ext = mime.includes('wav') ? 'wav' : mime.includes('mp4') ? 'm4a' : 'webm';
-      const file = new File([audioBlob], `call-recording.${ext}`, { type: mime });
-      const formData = new FormData();
-      formData.append('audio', file);
-      formData.append('callerId', callerId || '');
-
-      const audioRes = await fetch('/api/analyze-call-audio', { method: 'POST', body: formData });
-      const audioData = await audioRes.json().catch(() => ({}));
-      if (!audioRes.ok) {
-        throw new Error(audioData?.error || `Erreur API audio (${audioRes.status})`);
-      }
-
-      if (typeof S360AI?.analyzeTranscript !== 'function') {
-        throw new Error("Version IA obsolète détectée. Rechargez la page (Ctrl+F5).");
-      }
-
-      const persisted = await S360AI.analyzeTranscript(audioData?.audioAnalysis?.transcript || '', callerId);
-      return { ...persisted, transcript: audioData?.audioAnalysis?.transcript || '', audioAnalysis: audioData?.audioAnalysis || null };
-    }
-
-    function ensureAudioAnalysisCompatibility() {
-      if (window.S360AI && typeof window.S360AI.analyzeCallAudio !== 'function') {
-        console.warn('[Sales360] analyzeCallAudio absent sur S360AI, fallback activé.');
-        window.S360AI.analyzeCallAudio = fallbackAnalyzeCallAudio;
-      }
-    }
 
     // ── Update sidebar badge ───────────────────────────────
     function refreshBadge() {
@@ -755,10 +726,7 @@ Pierre : Oui, j'aimerais savoir si on peut intégrer ça avec notre CRM actuel S
       document.getElementById('btn-rec-analyze').disabled = true;
 
       try {
-        ensureAudioAnalysisCompatibility();
-        if (!window.S360AI || typeof S360AI.analyzeCallAudio !== 'function') {
-          throw new Error("Le moteur audio n'est pas chargé. Rechargez la page (Ctrl+F5).");
-        }
+
         const res = await S360AI.analyzeCallAudio(recordedBlob, caller);
         lastResult = res;
         document.getElementById('transcript-input').value = res.transcript || '';
