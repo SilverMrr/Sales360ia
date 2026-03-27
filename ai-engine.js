@@ -1,10 +1,10 @@
 // ============================================================
 // Sales360 — AI Engine
-// Pilote toutes les interactions avec OpenAI GPT-4o
+// Pilote toutes les interactions avec Google Gemini
 // ============================================================
 
-const OPENAI_API_KEY = "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";
-const OPENAI_MODEL  = "gpt-4o";
+const GEMINI_API_KEY = "AIzaSyD7cBh9d0WgnzQkBRVNZtU8jwJXLKcbFTs";
+const GEMINI_MODEL   = "gemini-2.5-flash";
 
 // ── Storage keys ─────────────────────────────────────────────
 const STORAGE_CALLS      = "s360_calls";       // tableau d'appels analysés
@@ -25,32 +25,37 @@ function uid() {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
 }
 
-// ── Appel OpenAI ─────────────────────────────────────────────
-async function callOpenAI(systemPrompt, userContent) {
-  const res = await fetch("https://api.openai.com/v1/chat/completions", {
+// ── Appel Gemini ─────────────────────────────────────────────
+async function callGemini(systemPrompt, userContent) {
+  const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`, {
     method: "POST",
     headers: {
-      "Content-Type": "application/json",
-      "Authorization": `Bearer ${OPENAI_API_KEY}`
+      "Content-Type": "application/json"
     },
     body: JSON.stringify({
-      model: OPENAI_MODEL,
-      temperature: 0.3,
-      response_format: { type: "json_object" },
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user",   content: userContent  }
+      systemInstruction: {
+        parts: [{ text: systemPrompt }]
+      },
+      generationConfig: {
+        temperature: 0.3,
+        responseMimeType: "application/json"
+      },
+      contents: [
+        {
+          role: "user",
+          parts: [{ text: userContent }]
+        }
       ]
     })
   });
 
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
-    throw new Error(err?.error?.message || `OpenAI error ${res.status}`);
+    throw new Error(err?.error?.message || `Gemini error ${res.status}`);
   }
 
   const data = await res.json();
-  const raw  = data.choices?.[0]?.message?.content || "{}";
+  const raw  = data.candidates?.[0]?.content?.parts?.[0]?.text || "{}";
   return JSON.parse(raw);
 }
 
@@ -107,7 +112,7 @@ async function analyzeTranscript(transcriptText, callerId = "") {
     ? `Interlocuteur connu : ${callerId}\n\n---\n${transcriptText}`
     : transcriptText;
 
-  const result = await callOpenAI(SYSTEM_PROMPT, userContent);
+  const result = await callGemini(SYSTEM_PROMPT, userContent);
 
   // ── Persiste l'appel ─────────────────────────────────────
   const callRecord = {
