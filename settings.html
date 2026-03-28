@@ -104,7 +104,7 @@
     </main>
   </div>
 
-  <script src="ai-engine.js?v=20260328a"></script>
+  <script src="ai-engine.js"></script>
   <script src="main.js"></script>
   <script>
     function notify(msg, type='ok') {
@@ -112,12 +112,8 @@
     }
 
     function refreshAiUi() {
-      if (!window.S360AI) {
-        document.getElementById('ai-active-summary').textContent = 'Moteur IA non chargé';
-        document.getElementById('ai-missing').textContent = 'Rechargez la page (Ctrl+F5).';
-        return;
-      }
-      const cfg = window.S360AI.getAiConfig();
+      if (!window.S360AI) return;
+      const cfg = S360AI.getAiConfig();
       document.getElementById('ai-mode').value = cfg.mode;
       document.getElementById('gemini-key').value = cfg.geminiKey || '';
       document.getElementById('audio-provider').value = cfg.audioProvider || 'openai';
@@ -126,9 +122,9 @@
       document.getElementById('text-api-key').value = cfg.textApiKey || '';
       document.getElementById('text-model').value = cfg.textModel || 'gpt-4o-mini';
 
-      const summary = window.S360AI.getActiveAiSummary();
+      const summary = S360AI.getActiveAiSummary();
       document.getElementById('ai-active-summary').textContent = summary;
-      const missing = window.S360AI.getMissingRequirements();
+      const missing = S360AI.getMissingRequirements();
       document.getElementById('ai-missing').textContent = missing.length ? `Manquant: ${missing.join(' · ')}` : 'Configuration complète ✅';
 
       const pill = document.getElementById('ai-active-pill');
@@ -141,15 +137,13 @@
     }
 
     function onModeChange() {
-      if (!window.S360AI) { notify('Moteur IA non chargé.'); return; }
       const mode = document.getElementById('ai-mode').value;
-      window.S360AI.setAiMode(mode);
+      S360AI.setAiMode(mode);
       refreshAiUi();
     }
 
     function saveAiSettings() {
-      if (!window.S360AI) { notify('Moteur IA non chargé.'); return; }
-      window.S360AI.saveAiConfig({
+      S360AI.saveAiConfig({
         mode: document.getElementById('ai-mode').value,
         geminiKey: document.getElementById('gemini-key').value.trim(),
         audioProvider: document.getElementById('audio-provider').value,
@@ -165,7 +159,7 @@
     async function testGeminiConfig() {
       try {
         const key = document.getElementById('gemini-key').value.trim();
-        await window.S360AI.testGeminiKey(key);
+        await S360AI.testGeminiKey(key);
         notify('Clé Gemini valide ✅');
       } catch (e) { notify('Test Gemini échoué: ' + e.message); }
     }
@@ -174,7 +168,7 @@
       try {
         const provider = document.getElementById('audio-provider').value;
         const key = document.getElementById('audio-api-key').value.trim();
-        await window.S360AI.testAudioProviderKey(provider, key);
+        await S360AI.testAudioProviderKey(provider, key);
         notify('Clé transcription valide ✅');
       } catch (e) { notify('Test audio échoué: ' + e.message); }
     }
@@ -183,7 +177,7 @@
       try {
         const provider = document.getElementById('text-provider').value;
         const key = document.getElementById('text-api-key').value.trim();
-        await window.S360AI.testTextProviderKey(provider, key);
+        await S360AI.testTextProviderKey(provider, key);
         notify('Clé texte valide ✅');
       } catch (e) { notify('Test texte échoué: ' + e.message); }
     }
@@ -194,7 +188,7 @@
     window.testAudioConfig = testAudioConfig;
     window.testTextConfig = testTextConfig;
 
-    window.addEventListener('load', refreshAiUi);
+    refreshAiUi();
   </script>
 </body>
 </html>

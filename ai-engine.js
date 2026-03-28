@@ -2,9 +2,6 @@
 // ============================================================
 // Sales360 — AI Engine (frontend-only, provider-agnostic)
 // ============================================================
-if (window.S360AI && window.S360AI.__engineId === "s360-multi-provider-v1") {
-  return;
-}
 
 const AI_MODE_STORAGE = "s360_ai_mode";
 const AI_MODE_GEMINI = "gemini_all_in_one";
@@ -20,6 +17,15 @@ const S360_TEXT_PROVIDER = "s360_text_provider";
 const S360_TEXT_API_KEY = "s360_text_api_key";
 const S360_TEXT_MODEL = "s360_text_model";
 
+// Sales360 — AI Engine (frontend)
+// Les appels Gemini passent uniquement par le backend (/api/*)
+// ============================================================
+
+const AI_PROVIDER = "gemini";
+const AI_ENGINE_VERSION = "2026-03-27-backend";
+const S360_API_BASE_STORAGE_KEY = "s360_api_base_url";
+
+// ── Storage keys ─────────────────────────────────────────────
 const STORAGE_CALLS = "s360_calls";
 const STORAGE_CONTACTS = "s360_contacts";
 const STORAGE_NEXT_STEPS = "s360_next_steps";
@@ -143,6 +149,74 @@ function getMissingRequirements() {
   if (cfg.mode === AI_MODE_GEMINI) {
     if (!cfg.geminiKey) missing.push("Clé API Gemini manquante");
     return missing;
+// ── Helpers storage ──────────────────────────────────────────
+function loadData(key, fallback = []) {
+  try {
+    return JSON.parse(localStorage.getItem(key)) || fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+function saveData(key, data) {
+  localStorage.setItem(key, JSON.stringify(data));
+}
+
+function uid() {
+  return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+}
+
+async function parseError(res, fallbackMessage) {
+  let body = {};
+  try {
+    body = await res.json();
+  } catch {
+    // no-op
+  }
+  return body?.error || fallbackMessage;
+}
+
+function getApiBaseUrl() {
+  const fromWindow = typeof window !== "undefined" ? (window.S360_API_BASE_URL || "") : "";
+  const fromStorage = typeof localStorage !== "undefined" ? (localStorage.getItem(S360_API_BASE_STORAGE_KEY) || "") : "";
+  const value = (fromWindow || fromStorage || "").trim();
+  return value.replace(/\/$/, "");
+}
+
+function apiUrl(path) {
+  const base = getApiBaseUrl();
+  return base ? `${base}${path}` : path;
+}
+
+function setApiBaseUrl(url = "") {
+  const clean = String(url || "").trim().replace(/\/$/, "");
+  if (typeof window !== "undefined") window.S360_API_BASE_URL = clean;
+  if (typeof localStorage !== "undefined") localStorage.setItem(S360_API_BASE_STORAGE_KEY, clean);
+  return clean;
+}
+
+// ── Appel backend pour analyse transcript ────────────────────
+async function callTranscriptAnalysis(transcriptText, callerId = "") {
+  let res;
+  try {
+    res = await fetch(apiUrl("/api/analyze-transcript"), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ transcriptText, callerId })
+    });
+  } catch (err) {
+    throw new Error(
+      `Backend API inaccessible (${apiUrl("/api/analyze-transcript")}). Configurez S360_API_BASE_URL.`
+    );
+  }
+
+  if (!res.ok) {
+    throw new Error(await parseError(res, `Erreur API (${res.status})`));
+  }
+
+  const data = await res.json();
+  if (!data?.analysis) {
+    throw new Error("Réponse backend invalide: analyse absente.");
   }
   if (!cfg.audioApiKey) missing.push(`Clé API transcription (${cfg.audioProvider}) manquante`);
   if (!cfg.textApiKey) missing.push(`Clé API analyse texte (${cfg.textProvider}) manquante`);
@@ -345,6 +419,9 @@ async function transcribeAudioRaw(audioBlob) {
   throw new Error(`Provider audio non supporté: ${cfg.audioProvider}`);
 }
 
+  return data.analysis;
+}
+
 function persistAnalysis(transcriptText, analysis, callerId = "", extra = {}) {
   const callRecord = {
     id: uid(),
@@ -360,6 +437,7 @@ function persistAnalysis(transcriptText, analysis, callerId = "", extra = {}) {
   saveData(STORAGE_CALLS, calls);
 
   const contactId = upsertContact(analysis.prospect, callRecord.id);
+
   const steps = (analysis.nextSteps || []).map((s) => ({
     ...s,
     id: uid(),
@@ -438,6 +516,63 @@ async function blobToBase64(blob) {
     binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize));
   }
   return btoa(binary);
+// ── Fonction principale : analyser un transcript ─────────────
+async function analyzeTranscript(transcriptText, callerId = "") {
+  if (!transcriptText || transcriptText.trim().length < 20) {
+    throw new Error("Le transcript est trop court pour être analysé.");
+  }
+
+  const analysis = await callTranscriptAnalysis(transcriptText, callerId);
+  return persistAnalysis(transcriptText, analysis, callerId);
+}
+
+// ── Nouveau flux : analyser un audio ─────────────────────────
+async function analyzeCallAudio(audioBlob, callerId = "") {
+  if (!audioBlob || !audioBlob.size) {
+    throw new Error("Aucun audio valide à analyser.");
+  }
+
+  const mime = audioBlob.type || "audio/webm";
+  const ext = mime.includes("wav") ? "wav" : mime.includes("mp4") ? "m4a" : "webm";
+  const file = new File([audioBlob], `call-recording.${ext}`, { type: mime });
+
+  const formData = new FormData();
+  formData.append("audio", file);
+  formData.append("callerId", callerId || "");
+
+  let res;
+  try {
+    res = await fetch(apiUrl("/api/analyze-call-audio"), {
+      method: "POST",
+      body: formData
+    });
+  } catch (err) {
+    throw new Error(
+      `Backend API inaccessible (${apiUrl("/api/analyze-call-audio")}). Configurez S360_API_BASE_URL.`
+    );
+  }
+
+  if (!res.ok) {
+    throw new Error(await parseError(res, `Erreur API audio (${res.status})`));
+  }
+
+  const data = await res.json();
+  if (!data?.crmAnalysis || !data?.audioAnalysis?.transcript) {
+    throw new Error("Réponse backend audio invalide.");
+  }
+
+  const persisted = persistAnalysis(
+    data.audioAnalysis.transcript,
+    data.crmAnalysis,
+    callerId,
+    { source: "audio-recording", audioInsights: data.audioAnalysis }
+  );
+
+  return {
+    ...persisted,
+    transcript: data.audioAnalysis.transcript,
+    audioAnalysis: data.audioAnalysis
+  };
 }
 
 function upsertContact(prospectData, callId) {
@@ -449,11 +584,38 @@ function upsertContact(prospectData, callId) {
 
   if (idx >= 0) {
     contacts[idx] = { ...contacts[idx], ...prospectData, lastCallId: callId, lastCallDate: now, callCount: (contacts[idx].callCount || 0) + 1 };
+
+  const idx = contacts.findIndex(
+    (c) =>
+      c.name.toLowerCase().trim() === nameNorm ||
+      (prospectData.email && c.email === prospectData.email)
+  );
+
+  const now = new Date().toISOString();
+
+  if (idx >= 0) {
+    contacts[idx] = {
+      ...contacts[idx],
+      ...prospectData,
+      lastCallId: callId,
+      lastCallDate: now,
+      callCount: (contacts[idx].callCount || 0) + 1
+    };
     saveData(STORAGE_CONTACTS, contacts);
     return contacts[idx].id;
   }
 
   const newContact = { id: uid(), ...prospectData, callCount: 1, lastCallId: callId, lastCallDate: now, createdAt: now, source: "Appel analysé" };
+  const newContact = {
+    id: uid(),
+    ...prospectData,
+    callCount: 1,
+    lastCallId: callId,
+    lastCallDate: now,
+    createdAt: now,
+    source: "Appel analysé"
+  };
+
   contacts.unshift(newContact);
   saveData(STORAGE_CONTACTS, contacts);
   return newContact.id;
@@ -462,6 +624,7 @@ function upsertContact(prospectData, callId) {
 function markStepDone(stepId) {
   const steps = loadData(STORAGE_NEXT_STEPS);
   const idx = steps.findIndex(s => s.id === stepId);
+  const idx = steps.findIndex((s) => s.id === stepId);
   if (idx >= 0) {
     steps[idx].done = true;
     steps[idx].doneAt = new Date().toISOString();
@@ -475,6 +638,27 @@ function deleteContact(contactId) { saveData(STORAGE_CONTACTS, loadData(STORAGE_
 function getStats() {
   const calls = loadData(STORAGE_CALLS), contacts = loadData(STORAGE_CONTACTS), steps = loadData(STORAGE_NEXT_STEPS);
   const pending = steps.filter(s => !s.done);
+
+function deleteStep(stepId) {
+  const steps = loadData(STORAGE_NEXT_STEPS);
+  saveData(STORAGE_NEXT_STEPS, steps.filter((s) => s.id !== stepId));
+}
+
+function deleteContact(contactId) {
+  const contacts = loadData(STORAGE_CONTACTS);
+  saveData(STORAGE_CONTACTS, contacts.filter((c) => c.id !== contactId));
+}
+
+function getStats() {
+  const calls = loadData(STORAGE_CALLS);
+  const contacts = loadData(STORAGE_CONTACTS);
+  const steps = loadData(STORAGE_NEXT_STEPS);
+
+  const pending = steps.filter((s) => !s.done);
+  const urgent = pending.filter((s) => s.type === "urgent");
+  const followUp = pending.filter((s) => s.type === "follow-up");
+  const opps = pending.filter((s) => s.type === "opportunity");
+
   return {
     totalCalls: calls.length,
     totalContacts: contacts.length,
@@ -482,11 +666,13 @@ function getStats() {
     urgentSteps: pending.filter(s => s.type === "urgent").length,
     followUpSteps: pending.filter(s => s.type === "follow-up").length,
     opportunities: pending.filter(s => s.type === "opportunity").length
+    urgentSteps: urgent.length,
+    followUpSteps: followUp.length,
+    opportunities: opps.length
   };
 }
 
 window.S360AI = {
-  __engineId: "s360-multi-provider-v1",
   provider: "multi-provider",
   version: "2026-03-28-front-only",
   STORAGE_CALLS, STORAGE_CONTACTS, STORAGE_NEXT_STEPS,
@@ -496,5 +682,22 @@ window.S360AI = {
   testGeminiKey, testAudioProviderKey, testTextProviderKey,
   analyzeTranscript, analyzeCallAudio,
   upsertContact, markStepDone, deleteStep, deleteContact, getStats
+  provider: AI_PROVIDER,
+  model: "backend-proxy",
+  version: AI_ENGINE_VERSION,
+  analyzeTranscript,
+  analyzeCallAudio,
+  getApiBaseUrl,
+  setApiBaseUrl,
+  upsertContact,
+  markStepDone,
+  deleteStep,
+  deleteContact,
+  getStats,
+  loadData,
+  saveData,
+  STORAGE_CALLS,
+  STORAGE_CONTACTS,
+  STORAGE_NEXT_STEPS
 };
 })();
