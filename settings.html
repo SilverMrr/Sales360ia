@@ -92,6 +92,20 @@
                   </div>
                 </div>
 
+
+                  <div class="cfg-sub" style="margin-top:8px;">
+                    <div class="settings-label">Analyse CRM texte</div>
+                    <div class="cfg-row">
+                      <select id="text-provider" class="form-input" style="max-width:220px;">
+                        <option value="openai">OpenAI</option>
+                      </select>
+                      <input type="password" id="text-api-key" class="form-input" placeholder="Clé API texte" style="min-width:280px;">
+                      <input type="text" id="text-model" class="form-input" value="gpt-4o-mini" style="max-width:200px;" placeholder="Modèle texte">
+                      <button class="btn btn-secondary" type="button" onclick="testTextConfig()">Tester</button>
+                    </div>
+                  </div>
+                </div>
+
                 <div class="cfg-row">
                   <button class="btn btn-primary" type="button" onclick="saveAiSettings()">💾 Sauvegarder la configuration IA</button>
                 </div>
@@ -155,6 +169,37 @@
       pill.className = `status-pill ${missing.length ? 'status-warn' : 'status-ok'}`;
       pill.textContent = missing.length ? 'Configuration incomplète' : 'Prêt';
 
+      </div>
+    </main>
+  </div>
+
+  <script src="ai-engine.js"></script>
+  <script src="main.js"></script>
+  <script>
+    function notify(msg, type='ok') {
+      alert(msg);
+    }
+
+    function refreshAiUi() {
+      if (!window.S360AI) return;
+      const cfg = S360AI.getAiConfig();
+      document.getElementById('ai-mode').value = cfg.mode;
+      document.getElementById('gemini-key').value = cfg.geminiKey || '';
+      document.getElementById('audio-provider').value = cfg.audioProvider || 'openai';
+      document.getElementById('audio-api-key').value = cfg.audioApiKey || '';
+      document.getElementById('text-provider').value = cfg.textProvider || 'openai';
+      document.getElementById('text-api-key').value = cfg.textApiKey || '';
+      document.getElementById('text-model').value = cfg.textModel || 'gpt-4o-mini';
+
+      const summary = S360AI.getActiveAiSummary();
+      document.getElementById('ai-active-summary').textContent = summary;
+      const missing = S360AI.getMissingRequirements();
+      document.getElementById('ai-missing').textContent = missing.length ? `Manquant: ${missing.join(' · ')}` : 'Configuration complète ✅';
+
+      const pill = document.getElementById('ai-active-pill');
+      pill.className = `status-pill ${missing.length ? 'status-warn' : 'status-ok'}`;
+      pill.textContent = missing.length ? 'Configuration incomplète' : 'Prêt';
+
       const isGemini = cfg.mode === 'gemini_all_in_one';
       document.getElementById('gemini-config').style.display = isGemini ? 'block' : 'none';
       document.getElementById('split-config').style.display = isGemini ? 'none' : 'block';
@@ -164,12 +209,15 @@
       if (!window.S360AI) { notify('Moteur IA non chargé.'); return; }
       const mode = document.getElementById('ai-mode').value;
       window.S360AI.setAiMode(mode);
+      const mode = document.getElementById('ai-mode').value;
+      S360AI.setAiMode(mode);
       refreshAiUi();
     }
 
     function saveAiSettings() {
       if (!window.S360AI) { notify('Moteur IA non chargé.'); return; }
       window.S360AI.saveAiConfig({
+      S360AI.saveAiConfig({
         mode: document.getElementById('ai-mode').value,
         geminiKey: document.getElementById('gemini-key').value.trim(),
         audioProvider: document.getElementById('audio-provider').value,
@@ -186,6 +234,7 @@
       try {
         const key = document.getElementById('gemini-key').value.trim();
         await window.S360AI.testGeminiKey(key);
+        await S360AI.testGeminiKey(key);
         notify('Clé Gemini valide ✅');
       } catch (e) { notify('Test Gemini échoué: ' + e.message); }
     }
@@ -195,6 +244,7 @@
         const provider = document.getElementById('audio-provider').value;
         const key = document.getElementById('audio-api-key').value.trim();
         await window.S360AI.testAudioProviderKey(provider, key);
+        await S360AI.testAudioProviderKey(provider, key);
         notify('Clé transcription valide ✅');
       } catch (e) { notify('Test audio échoué: ' + e.message); }
     }
@@ -204,6 +254,7 @@
         const provider = document.getElementById('text-provider').value;
         const key = document.getElementById('text-api-key').value.trim();
         await window.S360AI.testTextProviderKey(provider, key);
+        await S360AI.testTextProviderKey(provider, key);
         notify('Clé texte valide ✅');
       } catch (e) { notify('Test texte échoué: ' + e.message); }
     }
@@ -215,6 +266,7 @@
     window.testTextConfig = testTextConfig;
 
     window.addEventListener('load', refreshAiUi);
+    refreshAiUi();
   </script>
 </body>
 </html>
