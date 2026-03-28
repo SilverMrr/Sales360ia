@@ -92,6 +92,20 @@
                   </div>
                 </div>
 
+
+                  <div class="cfg-sub" style="margin-top:8px;">
+                    <div class="settings-label">Analyse CRM texte</div>
+                    <div class="cfg-row">
+                      <select id="text-provider" class="form-input" style="max-width:220px;">
+                        <option value="openai">OpenAI</option>
+                      </select>
+                      <input type="password" id="text-api-key" class="form-input" placeholder="Clé API texte" style="min-width:280px;">
+                      <input type="text" id="text-model" class="form-input" value="gpt-4o-mini" style="max-width:200px;" placeholder="Modèle texte">
+                      <button class="btn btn-secondary" type="button" onclick="testTextConfig()">Tester</button>
+                    </div>
+                  </div>
+                </div>
+
                 <div class="cfg-row">
                   <button class="btn btn-primary" type="button" onclick="saveAiSettings()">💾 Sauvegarder la configuration IA</button>
                 </div>
@@ -100,6 +114,61 @@
             </div>
           </div>
         </div>
+
+        <div class="card" style="margin-top:16px;">
+          <div class="settings-section">
+            <h2 class="settings-title">Profil</h2>
+            <div class="settings-item"><div><div class="settings-label">Nom complet</div><div class="settings-description">Jean Dupont</div></div><button class="btn btn-secondary">Modifier</button></div>
+            <div class="settings-item"><div><div class="settings-label">Email</div><div class="settings-description">jean.dupont@sales360.app</div></div><button class="btn btn-secondary">Modifier</button></div>
+          </div>
+
+          <div class="settings-section">
+            <h2 class="settings-title">Notifications</h2>
+            <div class="settings-item"><div><div class="settings-label">Notifications email</div><div class="settings-description">Recevoir les alertes et résumés d'activité</div></div><label class="toggle-switch"><input type="checkbox" checked><span class="toggle-slider"></span></label></div>
+            <div class="settings-item"><div><div class="settings-label">Notifications appels</div><div class="settings-description">Alerte en cas d'appel entrant</div></div><label class="toggle-switch"><input type="checkbox" checked><span class="toggle-slider"></span></label></div>
+          </div>
+
+          <div class="settings-section">
+            <h2 class="settings-title">Sécurité</h2>
+            <div class="settings-item"><div><div class="settings-label">Mot de passe</div><div class="settings-description">Dernière modification il y a 30 jours</div></div><button class="btn btn-secondary">Changer</button></div>
+            <div class="settings-item"><div><div class="settings-label">Authentification à deux facteurs</div><div class="settings-description">Sécurité renforcée du compte</div></div><label class="toggle-switch"><input type="checkbox"><span class="toggle-slider"></span></label></div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="ai-engine.js?v=20260328a"></script>
+  <script src="main.js"></script>
+  <script>
+    function notify(msg, type='ok') {
+      alert(msg);
+    }
+
+    function refreshAiUi() {
+      if (!window.S360AI) {
+        document.getElementById('ai-active-summary').textContent = 'Moteur IA non chargé';
+        document.getElementById('ai-missing').textContent = 'Rechargez la page (Ctrl+F5).';
+        return;
+      }
+      const cfg = window.S360AI.getAiConfig();
+      document.getElementById('ai-mode').value = cfg.mode;
+      document.getElementById('gemini-key').value = cfg.geminiKey || '';
+      document.getElementById('audio-provider').value = cfg.audioProvider || 'openai';
+      document.getElementById('audio-api-key').value = cfg.audioApiKey || '';
+      document.getElementById('text-provider').value = cfg.textProvider || 'openai';
+      document.getElementById('text-api-key').value = cfg.textApiKey || '';
+      document.getElementById('text-model').value = cfg.textModel || 'gpt-4o-mini';
+
+      const summary = window.S360AI.getActiveAiSummary();
+      document.getElementById('ai-active-summary').textContent = summary;
+      const missing = window.S360AI.getMissingRequirements();
+      document.getElementById('ai-missing').textContent = missing.length ? `Manquant: ${missing.join(' · ')}` : 'Configuration complète ✅';
+
+      const pill = document.getElementById('ai-active-pill');
+      pill.className = `status-pill ${missing.length ? 'status-warn' : 'status-ok'}`;
+      pill.textContent = missing.length ? 'Configuration incomplète' : 'Prêt';
+
       </div>
     </main>
   </div>
@@ -137,12 +206,17 @@
     }
 
     function onModeChange() {
+      if (!window.S360AI) { notify('Moteur IA non chargé.'); return; }
+      const mode = document.getElementById('ai-mode').value;
+      window.S360AI.setAiMode(mode);
       const mode = document.getElementById('ai-mode').value;
       S360AI.setAiMode(mode);
       refreshAiUi();
     }
 
     function saveAiSettings() {
+      if (!window.S360AI) { notify('Moteur IA non chargé.'); return; }
+      window.S360AI.saveAiConfig({
       S360AI.saveAiConfig({
         mode: document.getElementById('ai-mode').value,
         geminiKey: document.getElementById('gemini-key').value.trim(),
@@ -159,6 +233,7 @@
     async function testGeminiConfig() {
       try {
         const key = document.getElementById('gemini-key').value.trim();
+        await window.S360AI.testGeminiKey(key);
         await S360AI.testGeminiKey(key);
         notify('Clé Gemini valide ✅');
       } catch (e) { notify('Test Gemini échoué: ' + e.message); }
@@ -168,6 +243,7 @@
       try {
         const provider = document.getElementById('audio-provider').value;
         const key = document.getElementById('audio-api-key').value.trim();
+        await window.S360AI.testAudioProviderKey(provider, key);
         await S360AI.testAudioProviderKey(provider, key);
         notify('Clé transcription valide ✅');
       } catch (e) { notify('Test audio échoué: ' + e.message); }
@@ -177,6 +253,7 @@
       try {
         const provider = document.getElementById('text-provider').value;
         const key = document.getElementById('text-api-key').value.trim();
+        await window.S360AI.testTextProviderKey(provider, key);
         await S360AI.testTextProviderKey(provider, key);
         notify('Clé texte valide ✅');
       } catch (e) { notify('Test texte échoué: ' + e.message); }
@@ -188,6 +265,7 @@
     window.testAudioConfig = testAudioConfig;
     window.testTextConfig = testTextConfig;
 
+    window.addEventListener('load', refreshAiUi);
     refreshAiUi();
   </script>
 </body>

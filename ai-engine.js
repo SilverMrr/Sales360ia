@@ -2,6 +2,18 @@
 // ============================================================
 // Sales360 — AI Engine (frontend-only, provider-agnostic)
 // ============================================================
+if (window.S360AI && window.S360AI.__engineId === "s360-multi-provider-v1") {
+  return;
+}
+
+const AI_MODE_STORAGE = "s360_ai_mode";
+const AI_MODE_GEMINI = "gemini_all_in_one";
+const AI_MODE_SPLIT = "split_apis";
+
+const S360_GEMINI_KEY = "s360_gemini_key";
+const S360_GEMINI_TEXT_MODEL = "s360_gemini_text_model";
+const S360_GEMINI_AUDIO_MODEL = "s360_gemini_audio_model";
+
 
 const AI_MODE_STORAGE = "s360_ai_mode";
 const AI_MODE_GEMINI = "gemini_all_in_one";
@@ -149,6 +161,208 @@ function getMissingRequirements() {
   if (cfg.mode === AI_MODE_GEMINI) {
     if (!cfg.geminiKey) missing.push("Clé API Gemini manquante");
     return missing;
+  }
+  if (!cfg.audioApiKey) missing.push(`Clé API transcription (${cfg.audioProvider}) manquante`);
+  if (!cfg.textApiKey) missing.push(`Clé API analyse texte (${cfg.textProvider}) manquante`);
+  return missing;
+}
+function hasRequiredKeys() { return getMissingRequirements().length === 0; }
+
+function getActiveAiSummary() {
+  const cfg = getAiConfig();
+  if (cfg.mode === AI_MODE_GEMINI) return "Gemini tout-en-un";
+  const audioLabel = cfg.audioProvider === "deepgram" ? "Deepgram" : "OpenAI Transcribe";
+  const textLabel = "OpenAI CRM";
+  return `APIs séparées : ${audioLabel} + ${textLabel}`;
+}
+
+function normalizeJsonText(raw) {
+  const txt = String(raw || "").trim().replace(/^```json/i, "").replace(/^```/i, "").replace(/```$/i, "").trim();
+  const first = txt.indexOf("{");
+  const last = txt.lastIndexOf("}");
+  if (first === -1 || last === -1 || last < first) return "";
+  return txt.slice(first, last + 1);
+}
+function parseJsonWithFallback(raw, fallback) {
+  try { return JSON.parse(normalizeJsonText(raw) || ""); }
+  catch { return fallback; }
+}
+
+function sanitizeArray(arr) {
+  return Array.isArray(arr) ? arr.map(v => String(v || "").trim()).filter(Boolean) : [];
+}
+
+function normalizeCrmAnalysis(parsed) {
+  const fallback = {
+    prospect: { name: "", company: "", email: "", phone: "", status: "Prospect", estimatedValue: 0, notes: "" },
+    callSummary: { duration: "N/A", sentiment: "neutre", keyPoints: [], objections: [], outcome: "" },
+    nextSteps: [],
+    pipelineStage: "Prospection"
+  };
+  if (!parsed || typeof parsed !== "object") return fallback;
+  return {
+    prospect: {
+      ...fallback.prospect,
+      ...(parsed.prospect || {}),
+      estimatedValue: Number(parsed?.prospect?.estimatedValue) || 0
+    },
+    callSummary: {
+      ...fallback.callSummary,
+      ...(parsed.callSummary || {}),
+      keyPoints: sanitizeArray(parsed?.callSummary?.keyPoints),
+      objections: sanitizeArray(parsed?.callSummary?.objections)
+    },
+    nextSteps: Array.isArray(parsed.nextSteps) ? parsed.nextSteps.map(step => ({
+      title: String(step?.title || "Action à préciser"),
+      description: String(step?.description || ""),
+      type: ["urgent", "follow-up", "opportunity", "risk"].includes(step?.type) ? step.type : "follow-up",
+      dueDate: String(step?.dueDate || new Date().toISOString().slice(0, 10)),
+      priority: ["high", "medium", "low"].includes(step?.priority) ? step.priority : "medium",
+      estimatedValue: Number(step?.estimatedValue) || 0
+    })) : [],
+    pipelineStage: String(parsed.pipelineStage || fallback.pipelineStage)
+  };
+}
+
+function normalizeAudioInsights(parsed) {
+  return {
+    transcript: String(parsed?.transcript || "").trim(),
+    summary: String(parsed?.summary || "").trim(),
+    needs: sanitizeArray(parsed?.needs),
+    objections: sanitizeArray(parsed?.objections),
+    next_steps: sanitizeArray(parsed?.next_steps)
+  };
+}
+
+async function fetchJson(url, options, fallbackMessage = "Erreur réseau") {
+  let res;
+  try { res = await fetch(url, options); }
+  catch { throw new Error(fallbackMessage); }
+
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(body?.error?.message || body?.error || `${fallbackMessage} (${res.status})`);
+  return body;
+}
+
+async function callGeminiText(geminiKey, model, systemPrompt, userContent) {
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiKey}`;
+  const body = await fetchJson(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      systemInstruction: { parts: [{ text: systemPrompt }] },
+      generationConfig: { temperature: 0.3, responseMimeType: "application/json" },
+      contents: [{ role: "user", parts: [{ text: userContent }] }]
+    })
+  }, "Gemini indisponible");
+
+  return body?.candidates?.[0]?.content?.parts?.find(p => typeof p?.text === "string")?.text || "{}";
+}
+
+async function transcribeWithGemini(geminiKey, model, audioBlob) {
+  const base64Data = await blobToBase64(audioBlob);
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiKey}`;
+  const body = await fetchJson(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      generationConfig: { temperature: 0.2, responseMimeType: "application/json" },
+      contents: [{
+        role: "user",
+        parts: [
+          { text: AUDIO_PROMPT },
+          { inlineData: { mimeType: audioBlob.type || "audio/webm", data: base64Data } }
+        ]
+      }]
+    })
+  }, "Gemini audio indisponible");
+  const raw = body?.candidates?.[0]?.content?.parts?.find(p => typeof p?.text === "string")?.text || "{}";
+  return normalizeAudioInsights(parseJsonWithFallback(raw, {}));
+}
+
+async function transcribeWithOpenAI(apiKey, audioBlob) {
+  const form = new FormData();
+  form.append("file", new File([audioBlob], "call.webm", { type: audioBlob.type || "audio/webm" }));
+  form.append("model", "gpt-4o-mini-transcribe");
+  form.append("response_format", "json");
+
+  const body = await fetchJson("https://api.openai.com/v1/audio/transcriptions", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${apiKey}` },
+    body: form
+  }, "Transcription OpenAI indisponible");
+
+  return {
+    transcript: String(body?.text || "").trim(),
+    summary: "",
+    needs: [],
+    objections: [],
+    next_steps: []
+  };
+}
+
+async function transcribeWithDeepgram(apiKey, audioBlob) {
+  const body = await fetchJson("https://api.deepgram.com/v1/listen?model=nova-2&smart_format=true", {
+    method: "POST",
+    headers: {
+      Authorization: `Token ${apiKey}`,
+      "Content-Type": audioBlob.type || "audio/webm"
+    },
+    body: audioBlob
+  }, "Transcription Deepgram indisponible");
+
+  const transcript = body?.results?.channels?.[0]?.alternatives?.[0]?.transcript || "";
+  return { transcript: String(transcript).trim(), summary: "", needs: [], objections: [], next_steps: [] };
+}
+
+async function analyzeWithOpenAIText(apiKey, model, transcript) {
+  const body = await fetchJson("https://api.openai.com/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${apiKey}`
+    },
+    body: JSON.stringify({
+      model,
+      temperature: 0.3,
+      response_format: { type: "json_object" },
+      messages: [
+        { role: "system", content: CRM_PROMPT },
+        { role: "user", content: transcript }
+      ]
+    })
+  }, "Analyse CRM OpenAI indisponible");
+
+  return body?.choices?.[0]?.message?.content || "{}";
+}
+
+async function analyzeTranscriptRaw(transcriptText, callerId = "") {
+  const cfg = getAiConfig();
+  const userPrompt = callerId ? `Interlocuteur connu : ${callerId}\n\n---\n${transcriptText}` : transcriptText;
+
+  if (cfg.mode === AI_MODE_GEMINI) {
+    const raw = await callGeminiText(cfg.geminiKey, cfg.geminiTextModel, CRM_PROMPT, userPrompt);
+    return normalizeCrmAnalysis(parseJsonWithFallback(raw, null));
+  }
+
+  if (cfg.textProvider === "openai") {
+    const raw = await analyzeWithOpenAIText(cfg.textApiKey, cfg.textModel, userPrompt);
+    return normalizeCrmAnalysis(parseJsonWithFallback(raw, null));
+  }
+
+  throw new Error(`Provider texte non supporté: ${cfg.textProvider}`);
+}
+
+async function transcribeAudioRaw(audioBlob) {
+  const cfg = getAiConfig();
+  if (cfg.mode === AI_MODE_GEMINI) {
+    return transcribeWithGemini(cfg.geminiKey, cfg.geminiAudioModel, audioBlob);
+  }
+  if (cfg.audioProvider === "openai") return transcribeWithOpenAI(cfg.audioApiKey, audioBlob);
+  if (cfg.audioProvider === "deepgram") return transcribeWithDeepgram(cfg.audioApiKey, audioBlob);
+  throw new Error(`Provider audio non supporté: ${cfg.audioProvider}`);
+}
+
 // ── Helpers storage ──────────────────────────────────────────
 function loadData(key, fallback = []) {
   try {
@@ -584,6 +798,10 @@ function upsertContact(prospectData, callId) {
 
   if (idx >= 0) {
     contacts[idx] = { ...contacts[idx], ...prospectData, lastCallId: callId, lastCallDate: now, callCount: (contacts[idx].callCount || 0) + 1 };
+  const now = new Date().toISOString();
+
+  if (idx >= 0) {
+    contacts[idx] = { ...contacts[idx], ...prospectData, lastCallId: callId, lastCallDate: now, callCount: (contacts[idx].callCount || 0) + 1 };
 
   const idx = contacts.findIndex(
     (c) =>
@@ -638,6 +856,9 @@ function deleteContact(contactId) { saveData(STORAGE_CONTACTS, loadData(STORAGE_
 function getStats() {
   const calls = loadData(STORAGE_CALLS), contacts = loadData(STORAGE_CONTACTS), steps = loadData(STORAGE_NEXT_STEPS);
   const pending = steps.filter(s => !s.done);
+function getStats() {
+  const calls = loadData(STORAGE_CALLS), contacts = loadData(STORAGE_CONTACTS), steps = loadData(STORAGE_NEXT_STEPS);
+  const pending = steps.filter(s => !s.done);
 
 function deleteStep(stepId) {
   const steps = loadData(STORAGE_NEXT_STEPS);
@@ -673,6 +894,7 @@ function getStats() {
 }
 
 window.S360AI = {
+  __engineId: "s360-multi-provider-v1",
   provider: "multi-provider",
   version: "2026-03-28-front-only",
   STORAGE_CALLS, STORAGE_CONTACTS, STORAGE_NEXT_STEPS,
