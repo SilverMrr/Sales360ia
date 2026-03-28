@@ -194,6 +194,9 @@
     .audio-preview { width: 100%; margin-top: 8px; }
     .audio-insights { margin-top: 18px; display: none; }
     .audio-insights ul { margin: 8px 0 0; padding-left: 18px; color: var(--text-gray); }
+    .status-pill { display:inline-flex; align-items:center; gap:8px; padding:6px 12px; border-radius:20px; font-size:12px; font-weight:700; }
+    .status-ok { background:#dcfce7; color:#166534; }
+    .status-warn { background:#fef3c7; color:#92400e; }
   </style>
 </head>
 <body>
@@ -262,6 +265,16 @@
           <button class="tab-btn" onclick="switchTab('interface', this)">📞 Interface téléphonique</button>
         </div>
 
+        <div class="card" style="margin-bottom:16px;">
+          <div style="display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap;">
+            <div>
+              <div class="section-label">Statut moteur IA</div>
+              <div id="telephony-ai-summary" style="font-weight:700;color:var(--text-dark);">—</div>
+            </div>
+            <span id="telephony-ai-pill" class="status-pill status-warn">Configuration incomplète</span>
+          </div>
+        </div>
+
         <!-- ═══════════════════════════════════════════════
              TAB 1 — ANALYSE IA
         ═══════════════════════════════════════════════ -->
@@ -294,6 +307,7 @@
                 <button class="btn btn-outline" id="btn-audio-upload" type="button" onclick="document.getElementById('audio-upload-input').click()">📁 Upload audio</button>
                 <button class="btn btn-primary" id="btn-rec-analyze" type="button" onclick="analyzeRecordedAudio()" disabled>🧠 Analyser l'appel audio</button>
               </div>
+              <div id="ai-runtime-summary" style="font-size:12px;color:var(--text-light);margin-top:8px;">Moteur IA: —</div>
               <div style="margin-top:10px; display:flex; gap:8px; flex-wrap:wrap;">
                 <input id="api-base-url" class="form-input" placeholder="URL backend (ex: https://api.monapp.com)" style="max-width:420px;">
                 <button type="button" class="btn btn-outline" onclick="saveApiBaseUrl()">💾 Sauver URL API</button>
@@ -352,6 +366,7 @@ Pierre : Oui, j'aimerais savoir si on peut intégrer ça avec notre CRM actuel S
           <div class="card ai-loading" id="ai-loading">
             <div class="spinner"></div>
             <div style="font-weight: 700; font-size: 18px; color: var(--text-dark);">Analyse en cours...</div>
+            <div style="color: var(--text-gray);">Le moteur IA analyse le transcript et génère le résumé et les next steps</div>
             <div style="color: var(--text-gray);">Gemini lit le transcript et génère le résumé et les next steps</div>
           </div>
 
@@ -604,6 +619,11 @@ Pierre : Oui, j'aimerais savoir si on peut intégrer ça avec notre CRM actuel S
         showToast("❌ Moteur IA non chargé. Rechargez la page (Ctrl+F5).", 'error');
         return;
       }
+      const missing = window.S360AI.getMissingRequirements?.() || [];
+      if (missing.length) {
+        showToast(`⚠️ Configuration IA incomplète : ${missing.join(' · ')}`, 'warning');
+        return;
+      }
       const text = document.getElementById('transcript-input').value.trim();
       const caller = document.getElementById('caller-name').value.trim();
 
@@ -755,6 +775,8 @@ Pierre : Oui, j'aimerais savoir si on peut intégrer ça avec notre CRM actuel S
       document.getElementById('btn-rec-analyze').disabled = true;
 
       try {
+        const missing = window.S360AI?.getMissingRequirements?.() || [];
+        if (missing.length) throw new Error(`Configuration IA incomplète : ${missing.join(' · ')}`);
         const analyzeAudioFn = window.S360AI?.analyzeCallAudio;
         if (typeof analyzeAudioFn !== 'function') {
           throw new Error("Le moteur IA audio n'est pas chargé. Rechargez la page.");
@@ -995,6 +1017,17 @@ Pierre : Oui, j'aimerais savoir si on peut intégrer ça avec notre CRM actuel S
 
     // ── Init ───────────────────────────────────────────────
     ensureAudioAnalysisCompatibility();
+    if (window.S360AI && typeof window.S360AI.getActiveAiSummary === 'function') {
+      const summary = window.S360AI.getActiveAiSummary();
+      const missing = window.S360AI.getMissingRequirements?.() || [];
+      const aiEl = document.getElementById('ai-runtime-summary');
+      if (aiEl) aiEl.textContent = `Moteur IA: ${summary}${missing.length ? ` · Manquant: ${missing.join(', ')}` : ' · Prêt ✅'}`;
+      const summaryTop = document.getElementById('telephony-ai-summary');
+      const pill = document.getElementById('telephony-ai-pill');
+      if (summaryTop) summaryTop.textContent = summary;
+      if (pill) {
+        pill.className = `status-pill ${missing.length ? 'status-warn' : 'status-ok'}`;
+        pill.textContent = missing.length ? 'Configuration incomplète' : 'Moteur prêt ✅';
     if (window.S360AI && typeof window.S360AI.getApiBaseUrl === 'function') {
       const currentApiBase = window.S360AI.getApiBaseUrl();
       const apiInput = document.getElementById('api-base-url');
