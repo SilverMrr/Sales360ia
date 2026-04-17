@@ -81,6 +81,26 @@ function getProviderRuntime() {
   };
 }
 
+}
+
+function saveAiConfig(cfg = {}) {
+  const merged = { ...getAiConfig(), ...cfg };
+  localStorage.setItem(OPENAI_KEY_STORAGE, merged.openAiKey || "");
+  localStorage.setItem(OPENAI_MODEL_STORAGE, merged.textModel || DEFAULT_TEXT_MODEL);
+  localStorage.setItem(OPENAI_TRANSCRIBE_MODEL_STORAGE, merged.transcribeModel || DEFAULT_TRANSCRIBE_MODEL);
+  localStorage.setItem(AI_MODE_STORAGE, DEFAULT_MODE);
+  return getAiConfig();
+}
+
+function getProviderRuntime() {
+  const cfg = getAiConfig();
+  return {
+    mode: DEFAULT_MODE,
+    audio: { provider: "openai", model: cfg.transcribeModel },
+    text: { provider: "openai", model: cfg.textModel }
+  };
+}
+
 function getMissingRequirements() {
   const cfg = getAiConfig();
   const missing = [];
@@ -152,6 +172,13 @@ async function analyzeWithOpenAIText(apiKey, model, userContent) {
     })
   }, "Analyse GPT indisponible");
   return body?.choices?.[0]?.message?.content || "{}";
+}
+
+async function transcribeWithOpenAI(apiKey, model, audioBlob) {
+  const form = new FormData();
+  form.append("file", new File([audioBlob], "call.webm", { type: audioBlob.type || "audio/webm" }));
+  form.append("model", model || DEFAULT_TRANSCRIBE_MODEL);
+  form.append("response_format", "json");
 }
 
 async function transcribeWithOpenAI(apiKey, model, audioBlob) {
@@ -489,6 +516,14 @@ async function transcribeWithOpenAI(apiKey, audioBlob) {
     next_steps: []
   };
 }
+
+async function analyzeTranscriptRaw(transcriptText, callerId = "") {
+  const cfg = getAiConfig();
+  const prompt = callerId ? `Interlocuteur connu : ${callerId}\n\n---\n${transcriptText}` : transcriptText;
+  const raw = await analyzeWithOpenAIText(cfg.openAiKey, cfg.textModel, prompt);
+  return normalizeCrmAnalysis(parseJsonWithFallback(raw, {}));
+}
+
 
 async function analyzeTranscriptRaw(transcriptText, callerId = "") {
   const cfg = getAiConfig();
@@ -894,6 +929,11 @@ async function testOpenAIKey(key) {
   if (!key) throw new Error("Clé API GPT manquante");
   await fetchJson("https://api.openai.com/v1/models", { headers: { Authorization: `Bearer ${key}` } }, "Clé GPT invalide");
   return true;
+
+async function testOpenAIKey(key) {
+  if (!key) throw new Error("Clé API GPT manquante");
+  await fetchJson("https://api.openai.com/v1/models", { headers: { Authorization: `Bearer ${key}` } }, "Clé GPT invalide");
+  return true;
   return { callId: callRecord.id, contactId, analysis, nextSteps: steps };
 }
 
@@ -949,6 +989,9 @@ async function testTextProviderKey(provider, key) {
   }
   throw new Error("Provider texte non supporté");
 }
+async function testGeminiKey(key) { return testOpenAIKey(key); }
+async function testAudioProviderKey(provider, key) { return testOpenAIKey(key); }
+async function testTextProviderKey(provider, key) { return testOpenAIKey(key); }
 
 async function blobToBase64(blob) {
   const ab = await blob.arrayBuffer();
@@ -1034,6 +1077,13 @@ function upsertContact(prospectData, callId) {
   }
   const newContact = { id: uid(), ...prospectData, callCount: 1, lastCallId: callId, lastCallDate: now, createdAt: now, source: "Appel analysé" };
   const now = new Date().toISOString();
+  if (idx >= 0) {
+    contacts[idx] = { ...contacts[idx], ...prospectData, lastCallId: callId, lastCallDate: now, callCount: (contacts[idx].callCount || 0) + 1 };
+    saveData(STORAGE_CONTACTS, contacts);
+    return contacts[idx].id;
+  }
+  const newContact = { id: uid(), ...prospectData, callCount: 1, lastCallId: callId, lastCallDate: now, createdAt: now, source: "Appel analysé" };
+  const now = new Date().toISOString();
 
   if (idx >= 0) {
     contacts[idx] = { ...contacts[idx], ...prospectData, lastCallId: callId, lastCallDate: now, callCount: (contacts[idx].callCount || 0) + 1 };
@@ -1096,6 +1146,9 @@ function markStepDone(stepId) {
 }
 function deleteStep(stepId) { saveData(STORAGE_NEXT_STEPS, loadData(STORAGE_NEXT_STEPS).filter(s => s.id !== stepId)); }
 function deleteContact(contactId) { saveData(STORAGE_CONTACTS, loadData(STORAGE_CONTACTS).filter(c => c.id !== contactId)); }
+function getStats() {
+  const calls = loadData(STORAGE_CALLS), contacts = loadData(STORAGE_CONTACTS), steps = loadData(STORAGE_NEXT_STEPS);
+  const pending = steps.filter(s => !s.done);
 function getStats() {
   const calls = loadData(STORAGE_CALLS), contacts = loadData(STORAGE_CONTACTS), steps = loadData(STORAGE_NEXT_STEPS);
   const pending = steps.filter(s => !s.done);

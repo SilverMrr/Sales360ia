@@ -260,9 +260,19 @@
 
         <!-- ── TABS ─────────────────────────────────────── -->
         <div class="tabs">
-          <button class="tab-btn active" onclick="switchTab('analyse', this)">🤖 Analyser un appel</button>
-          <button class="tab-btn" onclick="switchTab('historique', this)">📋 Historique des appels</button>
-          <button class="tab-btn" onclick="switchTab('interface', this)">📞 Interface téléphonique</button>
+          <button class="tab-btn active" type="button" data-tab="analyse">🤖 Analyser un appel</button>
+          <button class="tab-btn" type="button" data-tab="historique">📋 Historique des appels</button>
+          <button class="tab-btn" type="button" data-tab="interface">📞 Interface téléphonique</button>
+        </div>
+
+        <div class="card" style="margin-bottom:16px;">
+          <div style="display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap;">
+            <div>
+              <div class="section-label">Statut moteur IA</div>
+              <div id="telephony-ai-summary" style="font-weight:700;color:var(--text-dark);">—</div>
+            </div>
+            <span id="telephony-ai-pill" class="status-pill status-warn">Configuration incomplète</span>
+          </div>
         </div>
 
         <div class="card" style="margin-bottom:16px;">
@@ -302,6 +312,12 @@
                 <div id="rec-status" class="rec-status"><span class="rec-dot"></span><span id="rec-status-text">Prêt à enregistrer</span></div>
               </div>
               <div class="rec-controls">
+                <button class="btn btn-secondary" id="btn-rec-start" type="button">🎙️ Démarrer l'enregistrement</button>
+                <button class="btn btn-outline" id="btn-rec-stop" type="button" disabled>⏹️ Arrêter</button>
+                <button class="btn btn-outline" id="btn-audio-upload" type="button">📁 Upload audio</button>
+                <button class="btn btn-primary" id="btn-rec-analyze" type="button" disabled>🧠 Analyser l'appel audio</button>
+              </div>
+              <div id="ai-runtime-summary" style="font-size:12px;color:var(--text-light);margin-top:8px;">Moteur IA: —</div>
                 <button class="btn btn-secondary" id="btn-rec-start" type="button" onclick="startRecording()">🎙️ Démarrer l'enregistrement</button>
                 <button class="btn btn-outline" id="btn-rec-stop" type="button" onclick="stopRecording()" disabled>⏹️ Arrêter</button>
                 <button class="btn btn-outline" id="btn-audio-upload" type="button" onclick="document.getElementById('audio-upload-input').click()">📁 Upload audio</button>
@@ -326,7 +342,7 @@
               <div class="upload-icon">📂</div>
               <div class="upload-title">Glisser-déposer un fichier ici</div>
               <div class="upload-sub">Formats acceptés : .txt, .md — ou cliquez pour parcourir</div>
-              <button class="btn btn-secondary" type="button" onclick="document.getElementById('file-input').click(); event.stopPropagation()">
+              <button class="btn btn-secondary" id="btn-transcript-upload" type="button">
                 Choisir un fichier
               </button>
             </div>
@@ -353,10 +369,10 @@ Pierre : Oui, j'aimerais savoir si on peut intégrer ça avec notre CRM actuel S
 
             <!-- Bouton analyser -->
             <div style="display: flex; gap: 16px; margin-top: 8px; flex-wrap: wrap;">
-              <button class="btn btn-primary" id="btn-analyze" onclick="startAnalysis()" style="font-size: 17px; padding: 14px 32px;">
+              <button class="btn btn-primary" id="btn-analyze" type="button" style="font-size: 17px; padding: 14px 32px;">
                 🤖 Analyser avec l'IA
               </button>
-              <button class="btn btn-outline" onclick="clearForm()">
+              <button class="btn btn-outline" id="btn-clear-form" type="button">
                 🗑️ Effacer
               </button>
             </div>
@@ -589,6 +605,13 @@ Pierre : Oui, j'aimerais savoir si on peut intégrer ça avec notre CRM actuel S
     const dropZone = document.getElementById('drop-zone');
     const fileInput = document.getElementById('file-input');
     const audioUploadInput = document.getElementById('audio-upload-input');
+    const btnTranscriptUpload = document.getElementById('btn-transcript-upload');
+    const btnAudioUpload = document.getElementById('btn-audio-upload');
+    const btnRecStart = document.getElementById('btn-rec-start');
+    const btnRecStop = document.getElementById('btn-rec-stop');
+    const btnRecAnalyze = document.getElementById('btn-rec-analyze');
+    const btnAnalyze = document.getElementById('btn-analyze');
+    const btnClear = document.getElementById('btn-clear-form');
 
     dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
     dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
@@ -614,6 +637,22 @@ Pierre : Oui, j'aimerais savoir si on peut intégrer ça avec notre CRM actuel S
         showToast(`✅ Fichier "${file.name}" chargé`);
       };
       reader.readAsText(file);
+    }
+
+    function bindUiActions() {
+      document.querySelectorAll('.tab-btn[data-tab]').forEach((tabBtn) => {
+        tabBtn.addEventListener('click', () => switchTab(tabBtn.dataset.tab, tabBtn));
+      });
+      btnTranscriptUpload?.addEventListener('click', (event) => {
+        event.stopPropagation();
+        fileInput?.click();
+      });
+      btnAudioUpload?.addEventListener('click', () => audioUploadInput?.click());
+      btnRecStart?.addEventListener('click', startRecording);
+      btnRecStop?.addEventListener('click', stopRecording);
+      btnRecAnalyze?.addEventListener('click', analyzeRecordedAudio);
+      btnAnalyze?.addEventListener('click', startAnalysis);
+      btnClear?.addEventListener('click', clearForm);
     }
 
     // ── Main analysis ──────────────────────────────────────
@@ -1055,6 +1094,30 @@ Pierre : Oui, j'aimerais savoir si on peut intégrer ça avec notre CRM actuel S
     window.startRecording = startRecording;
     window.stopRecording = stopRecording;
     window.analyzeRecordedAudio = analyzeRecordedAudio;
+
+    // ── Init ───────────────────────────────────────────────
+    try {
+      bindUiActions();
+      ensureAudioAnalysisCompatibility();
+      if (window.S360AI && typeof window.S360AI.getActiveAiSummary === 'function') {
+        const summary = window.S360AI.getActiveAiSummary();
+        const missing = window.S360AI.getMissingRequirements?.() || [];
+        const aiEl = document.getElementById('ai-runtime-summary');
+        if (aiEl) aiEl.textContent = `Moteur IA: ${summary}${missing.length ? ` · Manquant: ${missing.join(', ')}` : ' · Prêt ✅'}`;
+        const summaryTop = document.getElementById('telephony-ai-summary');
+        const pill = document.getElementById('telephony-ai-pill');
+        if (summaryTop) summaryTop.textContent = summary;
+        if (pill) {
+          pill.className = `status-pill ${missing.length ? 'status-warn' : 'status-ok'}`;
+          pill.textContent = missing.length ? 'Configuration incomplète' : 'Moteur prêt ✅';
+        }
+      }
+      refreshBadge();
+      updateRecorderButtons();
+    } catch (initError) {
+      console.error('Telephony init failed', initError);
+      showToast('⚠️ Initialisation partielle: rechargez la page.', 'warning');
+    }
     window.saveApiBaseUrl = saveApiBaseUrl;
   </script>
 </body>

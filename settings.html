@@ -160,6 +160,91 @@
   </main>
 </div>
 
+<script src="ai-engine-v2.js?v=20260417b"></script>
+<script src="main.js"></script>
+<script>
+  function notify(msg){ alert(msg); }
+
+  async function ensureAiEngineLoaded() {
+    if (window.S360AI) return true;
+    const existing = document.querySelector('script[data-s360-ai-loader="true"]');
+    if (existing) {
+      await new Promise((resolve) => existing.addEventListener('load', resolve, { once: true }));
+      return Boolean(window.S360AI);
+    }
+
+    const script = document.createElement('script');
+    script.src = 'ai-engine-v2.js?v=20260417b';
+    script.dataset.s360AiLoader = 'true';
+
+    const loaded = new Promise((resolve) => {
+      script.onload = () => resolve(true);
+      script.onerror = () => resolve(false);
+    });
+    document.head.appendChild(script);
+    await loaded;
+    return Boolean(window.S360AI);
+  }
+
+  async function refreshAiUi() {
+    const ready = await ensureAiEngineLoaded();
+    if (!ready) {
+      document.getElementById('ai-active-summary').textContent = 'Moteur IA non chargé';
+      document.getElementById('ai-missing').textContent = 'Le script AI a échoué au chargement. Faites Ctrl+F5 puis réessayez.';
+      return;
+    }
+    const cfg = window.S360AI.getAiConfig();
+    document.getElementById('openai-key').value = cfg.openAiKey || '';
+    document.getElementById('openai-text-model').value = cfg.textModel || 'gpt-4o-mini';
+    document.getElementById('openai-transcribe-model').value = cfg.transcribeModel || 'gpt-4o-mini-transcribe';
+
+    const summary = window.S360AI.getActiveAiSummary();
+    const missing = window.S360AI.getMissingRequirements();
+    document.getElementById('ai-active-summary').textContent = summary;
+    document.getElementById('ai-missing').textContent = missing.length ? `Manquant: ${missing.join(' · ')}` : 'Configuration complète ✅';
+
+    const pill = document.getElementById('ai-active-pill');
+    pill.className = `status-pill ${missing.length ? 'status-warn' : 'status-ok'}`;
+    pill.textContent = missing.length ? 'Configuration incomplète' : 'Prêt';
+  }
+
+  async function saveAiSettings() {
+    if (!await ensureAiEngineLoaded()) return notify('Moteur IA non chargé');
+    window.S360AI.saveAiConfig({
+      openAiKey: document.getElementById('openai-key').value.trim(),
+      textModel: document.getElementById('openai-text-model').value.trim() || 'gpt-4o-mini',
+      transcribeModel: document.getElementById('openai-transcribe-model').value.trim() || 'gpt-4o-mini-transcribe'
+    });
+    await refreshAiUi();
+    notify('Configuration GPT sauvegardée ✅');
+  }
+
+  async function testOpenAIConfig() {
+    try {
+      if (!await ensureAiEngineLoaded()) throw new Error('Moteur IA non chargé');
+      await window.S360AI.testOpenAIKey(document.getElementById('openai-key').value.trim());
+      notify('Clé GPT valide ✅');
+    } catch (e) {
+      notify('Test échoué: ' + e.message);
+    }
+  }
+
+  window.saveAiSettings = saveAiSettings;
+  window.testOpenAIConfig = testOpenAIConfig;
+  window.addEventListener('load', refreshAiUi);
+</script>
+
+      <div class="card" style="margin-top:16px;">
+        <div class="settings-section">
+          <h2 class="settings-title">Profil</h2>
+          <div class="settings-item"><div><div class="settings-label">Nom complet</div><div class="settings-description">Jean Dupont</div></div><button class="btn btn-secondary">Modifier</button></div>
+          <div class="settings-item"><div><div class="settings-label">Email</div><div class="settings-description">jean.dupont@sales360.app</div></div><button class="btn btn-secondary">Modifier</button></div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
 <script src="ai-engine.js?v=20260417a"></script>
 <script src="main.js"></script>
 <script>
