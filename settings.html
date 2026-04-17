@@ -5,226 +5,145 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Sales360 - Paramètres</title>
   <link rel="stylesheet" href="style.css">
+  <style>
+    .status-pill { display:inline-flex; align-items:center; gap:8px; padding:6px 12px; border-radius:20px; font-size:12px; font-weight:700; }
+    .status-ok { background:#dcfce7; color:#166534; }
+    .status-warn { background:#fef3c7; color:#92400e; }
+  </style>
 </head>
 <body>
-  <div class="app-container">
-    <!-- Sidebar -->
-    <aside class="sidebar">
-      <div class="logo">
-        <div class="logo-icon">S3</div>
-        <span>Sales360</span>
+<div class="app-container">
+  <aside class="sidebar">
+    <div class="logo"><div class="logo-icon">S3</div><span>Sales360</span></div>
+    <nav><ul class="nav-menu">
+      <li class="nav-item"><a href="index.html" class="nav-link"><span>Accueil</span></a></li>
+      <li class="nav-item"><a href="dashboard.html" class="nav-link"><span>Tableau de bord</span></a></li>
+      <li class="nav-item"><a href="contacts.html" class="nav-link"><span>Contacts</span></a></li>
+      <li class="nav-item"><a href="pipeline.html" class="nav-link"><span>Pipeline</span></a></li>
+      <li class="nav-item"><a href="telephony.html" class="nav-link"><span>Téléphonie</span></a></li>
+      <li class="nav-item"><a href="visio.html" class="nav-link"><span>Visioconférence</span></a></li>
+      <li class="nav-item"><a href="settings.html" class="nav-link active"><span>Paramètres</span></a></li>
+    </ul></nav>
+  </aside>
+
+  <main class="main-content">
+    <header class="topbar"><div class="topbar-left"><h1>Paramètres</h1></div></header>
+    <div class="content">
+      <div class="card">
+        <div class="settings-section">
+          <h2 class="settings-title">Configuration IA (clé GPT unique)</h2>
+          <div class="settings-item" style="align-items:flex-start;">
+            <div style="width:100%;display:grid;gap:12px;">
+              <div>
+                <div class="settings-label">Moteur IA actif</div>
+                <div id="ai-active-summary" class="settings-description">—</div>
+                <span id="ai-active-pill" class="status-pill status-warn" style="margin-top:8px;">Configuration incomplète</span>
+              </div>
+              <div class="form-group" style="margin:0;">
+                <label class="form-label">Clé API GPT (OpenAI)</label>
+                <input id="openai-key" type="password" class="form-input" placeholder="sk-...">
+              </div>
+              <div class="form-group" style="margin:0;">
+                <label class="form-label">Modèle CRM texte</label>
+                <input id="openai-text-model" type="text" class="form-input" value="gpt-4o-mini">
+              </div>
+              <div class="form-group" style="margin:0;">
+                <label class="form-label">Modèle transcription audio</label>
+                <input id="openai-transcribe-model" type="text" class="form-input" value="gpt-4o-mini-transcribe">
+              </div>
+              <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                <button class="btn btn-secondary" type="button" onclick="testOpenAIConfig()">Tester la clé GPT</button>
+                <button class="btn btn-primary" type="button" onclick="saveAiSettings()">💾 Sauvegarder</button>
+              </div>
+              <div id="ai-missing" class="settings-description" style="color:#b45309;"></div>
+            </div>
+          </div>
+        </div>
       </div>
-      
-      <nav>
-        <ul class="nav-menu">
-          <li class="nav-item">
-            <a href="index.html" class="nav-link">
-              <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
-              </svg>
-              <span>Accueil</span>
-            </a>
-          </li>
-          <li class="nav-item">
-            <a href="dashboard.html" class="nav-link">
-              <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
-              </svg>
-              <span data-i18n="dashboard">Tableau de bord</span>
-            </a>
-          </li>
-          <li class="nav-item">
-            <a href="contacts.html" class="nav-link">
-              <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
-              </svg>
-              <span data-i18n="contacts">Contacts</span>
-            </a>
-          </li>
-          <li class="nav-item">
-            <a href="pipeline.html" class="nav-link">
-              <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
-              </svg>
-              <span data-i18n="pipeline">Pipeline</span>
-            </a>
-          </li>
-          <li class="nav-item">
-            <a href="telephony.html" class="nav-link">
-              <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path>
-              </svg>
-              <span data-i18n="telephony">Téléphonie</span>
-            </a>
-          </li>
-          <li class="nav-item">
-            <a href="visio.html" class="nav-link">
-              <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
-              </svg>
-              <span data-i18n="visio">Visioconférence</span>
-            </a>
-          </li>
-          <li class="nav-item">
-            <a href="settings.html" class="nav-link active">
-              <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-              </svg>
-              <span data-i18n="settings">Paramètres</span>
-            </a>
-          </li>
-        </ul>
-      </nav>
-    </aside>
 
-    <!-- Main Content -->
-    <main class="main-content">
-      <!-- Topbar -->
-      <header class="topbar">
-        <div class="topbar-left">
-          <h1 data-i18n="settingsTitle">Paramètres</h1>
+      <div class="card" style="margin-top:16px;">
+        <div class="settings-section">
+          <h2 class="settings-title">Profil</h2>
+          <div class="settings-item"><div><div class="settings-label">Nom complet</div><div class="settings-description">Jean Dupont</div></div><button class="btn btn-secondary">Modifier</button></div>
+          <div class="settings-item"><div><div class="settings-label">Email</div><div class="settings-description">jean.dupont@sales360.app</div></div><button class="btn btn-secondary">Modifier</button></div>
         </div>
-        <div class="topbar-right">
-          <div class="lang-switch">
-            <button class="lang-btn active" data-lang="fr">FR</button>
-            <button class="lang-btn" data-lang="en">EN</button>
-          </div>
-          <div class="user-profile">
-            <div class="user-avatar">JD</div>
-          </div>
-        </div>
-      </header>
+      </div>
+    </div>
+  </main>
+</div>
 
-      <!-- Content -->
-      <div class="content">
-        <div class="card">
-          <!-- Profile Section -->
-          <div class="settings-section">
-            <h2 class="settings-title" data-i18n="profile">Profil</h2>
-            
-            <div class="settings-item">
-              <div>
-                <div class="settings-label">Nom complet</div>
-                <div class="settings-description">Jean Dupont</div>
-              </div>
-              <button class="btn btn-secondary">Modifier</button>
-            </div>
+<script src="ai-engine-v2.js?v=20260417b"></script>
+<script src="main.js"></script>
+<script>
+  function notify(msg){ alert(msg); }
 
-            <div class="settings-item">
-              <div>
-                <div class="settings-label">Email</div>
-                <div class="settings-description"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="2a404f4b44044e5f5a45445e6a594b464f59191c1a04494547">[email&#160;protected]</a></div>
-              </div>
-              <button class="btn btn-secondary">Modifier</button>
-            </div>
+  async function ensureAiEngineLoaded() {
+    if (window.S360AI) return true;
+    const existing = document.querySelector('script[data-s360-ai-loader="true"]');
+    if (existing) {
+      await new Promise((resolve) => existing.addEventListener('load', resolve, { once: true }));
+      return Boolean(window.S360AI);
+    }
 
-            <div class="settings-item">
-              <div>
-                <div class="settings-label">Téléphone</div>
-                <div class="settings-description">+33 6 12 34 56 78</div>
-              </div>
-              <button class="btn btn-secondary">Modifier</button>
-            </div>
-          </div>
+    const script = document.createElement('script');
+    script.src = 'ai-engine-v2.js?v=20260417b';
+    script.dataset.s360AiLoader = 'true';
 
-          <!-- Notifications Section -->
-          <div class="settings-section">
-            <h2 class="settings-title" data-i18n="notifications">Notifications</h2>
-            
-            <div class="settings-item">
-              <div>
-                <div class="settings-label" data-i18n="emailNotifications">Notifications par email</div>
-                <div class="settings-description">Recevoir des notifications par email</div>
-              </div>
-              <label class="toggle-switch">
-                <input type="checkbox" checked>
-                <span class="toggle-slider"></span>
-              </label>
-            </div>
+    const loaded = new Promise((resolve) => {
+      script.onload = () => resolve(true);
+      script.onerror = () => resolve(false);
+    });
+    document.head.appendChild(script);
+    await loaded;
+    return Boolean(window.S360AI);
+  }
 
-            <div class="settings-item">
-              <div>
-                <div class="settings-label" data-i18n="pushNotifications">Notifications push</div>
-                <div class="settings-description">Recevoir des notifications push</div>
-              </div>
-              <label class="toggle-switch">
-                <input type="checkbox" checked>
-                <span class="toggle-slider"></span>
-              </label>
-            </div>
+  async function refreshAiUi() {
+    const ready = await ensureAiEngineLoaded();
+    if (!ready) {
+      document.getElementById('ai-active-summary').textContent = 'Moteur IA non chargé';
+      document.getElementById('ai-missing').textContent = 'Le script AI a échoué au chargement. Faites Ctrl+F5 puis réessayez.';
+      return;
+    }
+    const cfg = window.S360AI.getAiConfig();
+    document.getElementById('openai-key').value = cfg.openAiKey || '';
+    document.getElementById('openai-text-model').value = cfg.textModel || 'gpt-4o-mini';
+    document.getElementById('openai-transcribe-model').value = cfg.transcribeModel || 'gpt-4o-mini-transcribe';
 
-            <div class="settings-item">
-              <div>
-                <div class="settings-label">Notifications d'appels</div>
-                <div class="settings-description">Alertes pour les appels entrants</div>
-              </div>
-              <label class="toggle-switch">
-                <input type="checkbox" checked>
-                <span class="toggle-slider"></span>
-              </label>
-            </div>
-          </div>
+    const summary = window.S360AI.getActiveAiSummary();
+    const missing = window.S360AI.getMissingRequirements();
+    document.getElementById('ai-active-summary').textContent = summary;
+    document.getElementById('ai-missing').textContent = missing.length ? `Manquant: ${missing.join(' · ')}` : 'Configuration complète ✅';
 
-          <!-- Appearance Section -->
-          <div class="settings-section">
-            <h2 class="settings-title" data-i18n="theme">Thème</h2>
-            
-            <div class="settings-item">
-              <div>
-                <div class="settings-label" data-i18n="darkMode">Mode sombre</div>
-                <div class="settings-description">Activer le thème sombre</div>
-              </div>
-              <label class="toggle-switch">
-                <input type="checkbox">
-                <span class="toggle-slider"></span>
-              </label>
-            </div>
+    const pill = document.getElementById('ai-active-pill');
+    pill.className = `status-pill ${missing.length ? 'status-warn' : 'status-ok'}`;
+    pill.textContent = missing.length ? 'Configuration incomplète' : 'Prêt';
+  }
 
-            <div class="settings-item">
-              <div>
-                <div class="settings-label" data-i18n="language">Langue</div>
-                <div class="settings-description">Choisir la langue de l'interface</div>
-              </div>
-              <select class="form-input" style="max-width: 200px;">
-                <option value="fr">Français</option>
-                <option value="en">English</option>
-              </select>
-            </div>
-          </div>
+  async function saveAiSettings() {
+    if (!await ensureAiEngineLoaded()) return notify('Moteur IA non chargé');
+    window.S360AI.saveAiConfig({
+      openAiKey: document.getElementById('openai-key').value.trim(),
+      textModel: document.getElementById('openai-text-model').value.trim() || 'gpt-4o-mini',
+      transcribeModel: document.getElementById('openai-transcribe-model').value.trim() || 'gpt-4o-mini-transcribe'
+    });
+    await refreshAiUi();
+    notify('Configuration GPT sauvegardée ✅');
+  }
 
-          <!-- Security Section -->
-          <div class="settings-section">
-            <h2 class="settings-title">Sécurité</h2>
-            
-            <div class="settings-item">
-              <div>
-                <div class="settings-label">Mot de passe</div>
-                <div class="settings-description">Dernière modification il y a 30 jours</div>
-              </div>
-              <button class="btn btn-secondary">Changer</button>
-            </div>
+  async function testOpenAIConfig() {
+    try {
+      if (!await ensureAiEngineLoaded()) throw new Error('Moteur IA non chargé');
+      await window.S360AI.testOpenAIKey(document.getElementById('openai-key').value.trim());
+      notify('Clé GPT valide ✅');
+    } catch (e) {
+      notify('Test échoué: ' + e.message);
+    }
+  }
 
-            <div class="settings-item">
-              <div>
-                <div class="settings-label">Authentification à deux facteurs</div>
-                <div class="settings-description">Sécurité renforcée pour votre compte</div>
-              </div>
-              <label class="toggle-switch">
-                <input type="checkbox">
-                <span class="toggle-slider"></span>
-              </label>
-            </div>
-          </div>
-
-          <!-- Danger Zone -->
-          <div class="settings-section">
-            <h2 class="settings-title" style="color: var(--accent-orange);">Zone de danger</h2>
-            
-            <div class="settings-item">
-              <div>
-                <div class="settings-label">Supprimer le compte</div>
-                <div class="settings-description">Supprimer définitivement votre compte</div>
-              </div>
-              <button class="btn" style="background: #ef4444; color: white;">Supprimer</button>
-         
+  window.saveAiSettings = saveAiSettings;
+  window.testOpenAIConfig = testOpenAIConfig;
+  window.addEventListener('load', refreshAiUi);
+</script>
+</body>
+</html>
