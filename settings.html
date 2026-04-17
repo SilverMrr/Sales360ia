@@ -15,6 +15,117 @@
   </style>
 </head>
 <body>
+<div class="app-container">
+  <aside class="sidebar">
+    <div class="logo"><div class="logo-icon">S3</div><span>Sales360</span></div>
+    <nav><ul class="nav-menu">
+      <li class="nav-item"><a href="index.html" class="nav-link"><span>Accueil</span></a></li>
+      <li class="nav-item"><a href="dashboard.html" class="nav-link"><span>Tableau de bord</span></a></li>
+      <li class="nav-item"><a href="contacts.html" class="nav-link"><span>Contacts</span></a></li>
+      <li class="nav-item"><a href="pipeline.html" class="nav-link"><span>Pipeline</span></a></li>
+      <li class="nav-item"><a href="telephony.html" class="nav-link"><span>Téléphonie</span></a></li>
+      <li class="nav-item"><a href="visio.html" class="nav-link"><span>Visioconférence</span></a></li>
+      <li class="nav-item"><a href="settings.html" class="nav-link active"><span>Paramètres</span></a></li>
+    </ul></nav>
+  </aside>
+
+  <main class="main-content">
+    <header class="topbar"><div class="topbar-left"><h1>Paramètres</h1></div></header>
+    <div class="content">
+      <div class="card">
+        <div class="settings-section">
+          <h2 class="settings-title">Configuration IA (clé GPT unique)</h2>
+          <div class="settings-item" style="align-items:flex-start;">
+            <div style="width:100%;display:grid;gap:12px;">
+              <div>
+                <div class="settings-label">Moteur IA actif</div>
+                <div id="ai-active-summary" class="settings-description">—</div>
+                <span id="ai-active-pill" class="status-pill status-warn" style="margin-top:8px;">Configuration incomplète</span>
+              </div>
+              <div class="form-group" style="margin:0;">
+                <label class="form-label">Clé API GPT (OpenAI)</label>
+                <input id="openai-key" type="password" class="form-input" placeholder="sk-...">
+              </div>
+              <div class="form-group" style="margin:0;">
+                <label class="form-label">Modèle CRM texte</label>
+                <input id="openai-text-model" type="text" class="form-input" value="gpt-4o-mini">
+              </div>
+              <div class="form-group" style="margin:0;">
+                <label class="form-label">Modèle transcription audio</label>
+                <input id="openai-transcribe-model" type="text" class="form-input" value="gpt-4o-mini-transcribe">
+              </div>
+              <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                <button class="btn btn-secondary" type="button" onclick="testOpenAIConfig()">Tester la clé GPT</button>
+                <button class="btn btn-primary" type="button" onclick="saveAiSettings()">💾 Sauvegarder</button>
+              </div>
+              <div id="ai-missing" class="settings-description" style="color:#b45309;"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:16px;">
+        <div class="settings-section">
+          <h2 class="settings-title">Profil</h2>
+          <div class="settings-item"><div><div class="settings-label">Nom complet</div><div class="settings-description">Jean Dupont</div></div><button class="btn btn-secondary">Modifier</button></div>
+          <div class="settings-item"><div><div class="settings-label">Email</div><div class="settings-description">jean.dupont@sales360.app</div></div><button class="btn btn-secondary">Modifier</button></div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script src="ai-engine.js?v=20260417a"></script>
+<script src="main.js"></script>
+<script>
+  function notify(msg){ alert(msg); }
+
+  function refreshAiUi() {
+    if (!window.S360AI) {
+      document.getElementById('ai-active-summary').textContent = 'Moteur IA non chargé';
+      document.getElementById('ai-missing').textContent = 'Rechargez la page (Ctrl+F5).';
+      return;
+    }
+    const cfg = window.S360AI.getAiConfig();
+    document.getElementById('openai-key').value = cfg.openAiKey || '';
+    document.getElementById('openai-text-model').value = cfg.textModel || 'gpt-4o-mini';
+    document.getElementById('openai-transcribe-model').value = cfg.transcribeModel || 'gpt-4o-mini-transcribe';
+
+    const summary = window.S360AI.getActiveAiSummary();
+    const missing = window.S360AI.getMissingRequirements();
+    document.getElementById('ai-active-summary').textContent = summary;
+    document.getElementById('ai-missing').textContent = missing.length ? `Manquant: ${missing.join(' · ')}` : 'Configuration complète ✅';
+
+    const pill = document.getElementById('ai-active-pill');
+    pill.className = `status-pill ${missing.length ? 'status-warn' : 'status-ok'}`;
+    pill.textContent = missing.length ? 'Configuration incomplète' : 'Prêt';
+  }
+
+  function saveAiSettings() {
+    if (!window.S360AI) return notify('Moteur IA non chargé');
+    window.S360AI.saveAiConfig({
+      openAiKey: document.getElementById('openai-key').value.trim(),
+      textModel: document.getElementById('openai-text-model').value.trim() || 'gpt-4o-mini',
+      transcribeModel: document.getElementById('openai-transcribe-model').value.trim() || 'gpt-4o-mini-transcribe'
+    });
+    refreshAiUi();
+    notify('Configuration GPT sauvegardée ✅');
+  }
+
+  async function testOpenAIConfig() {
+    try {
+      if (!window.S360AI) throw new Error('Moteur IA non chargé');
+      await window.S360AI.testOpenAIKey(document.getElementById('openai-key').value.trim());
+      notify('Clé GPT valide ✅');
+    } catch (e) {
+      notify('Test échoué: ' + e.message);
+    }
+  }
+
+  window.saveAiSettings = saveAiSettings;
+  window.testOpenAIConfig = testOpenAIConfig;
+  window.addEventListener('load', refreshAiUi);
+</script>
   <div class="app-container">
     <aside class="sidebar">
       <div class="logo"><div class="logo-icon">S3</div><span>Sales360</span></div>
