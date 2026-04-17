@@ -167,6 +167,36 @@
     .info-row:last-child { border: none; }
     .info-row span:first-child { color: var(--text-gray); }
     .info-row span:last-child  { font-weight: 600; color: var(--text-dark); }
+
+    /* ── Audio recorder ── */
+    .audio-recorder {
+      border: 2px solid var(--border-light);
+      border-radius: var(--radius-md);
+      padding: 16px;
+      background: #fff;
+      margin-bottom: 18px;
+    }
+    .recorder-top {
+      display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap;
+      margin-bottom: 12px;
+    }
+    .rec-status {
+      display: inline-flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 700;
+      padding: 6px 12px; border-radius: 20px; background: var(--bg-light); color: var(--text-gray);
+    }
+    .rec-status.recording { background: #fee2e2; color: #991b1b; }
+    .rec-dot {
+      width: 8px; height: 8px; border-radius: 50%; background: #9ca3af;
+    }
+    .rec-status.recording .rec-dot { background: #ef4444; animation: recBlink 1s infinite; }
+    @keyframes recBlink { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+    .rec-controls { display: flex; gap: 10px; flex-wrap: wrap; }
+    .audio-preview { width: 100%; margin-top: 8px; }
+    .audio-insights { margin-top: 18px; display: none; }
+    .audio-insights ul { margin: 8px 0 0; padding-left: 18px; color: var(--text-gray); }
+    .status-pill { display:inline-flex; align-items:center; gap:8px; padding:6px 12px; border-radius:20px; font-size:12px; font-weight:700; }
+    .status-ok { background:#dcfce7; color:#166534; }
+    .status-warn { background:#fef3c7; color:#92400e; }
   </style>
 </head>
 <body>
@@ -235,6 +265,16 @@
           <button class="tab-btn" onclick="switchTab('interface', this)">📞 Interface téléphonique</button>
         </div>
 
+        <div class="card" style="margin-bottom:16px;">
+          <div style="display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap;">
+            <div>
+              <div class="section-label">Statut moteur IA</div>
+              <div id="telephony-ai-summary" style="font-weight:700;color:var(--text-dark);">—</div>
+            </div>
+            <span id="telephony-ai-pill" class="status-pill status-warn">Configuration incomplète</span>
+          </div>
+        </div>
+
         <!-- ═══════════════════════════════════════════════
              TAB 1 — ANALYSE IA
         ═══════════════════════════════════════════════ -->
@@ -251,6 +291,26 @@
                 <label class="form-label">Nom de l'interlocuteur (optionnel)</label>
                 <input type="text" id="caller-name" class="form-input" placeholder="ex : Pierre Dupont — Innovation Labs">
               </div>
+            </div>
+
+            <div class="audio-recorder">
+              <div class="recorder-top">
+                <div>
+                  <div class="section-label" style="margin-bottom:6px;">Nouveau mode — Enregistrement audio</div>
+                  <div style="font-size:14px;color:var(--text-gray);">Enregistrez un appel puis analysez-le automatiquement (transcript + insights + CRM).</div>
+                </div>
+                <div id="rec-status" class="rec-status"><span class="rec-dot"></span><span id="rec-status-text">Prêt à enregistrer</span></div>
+              </div>
+              <div class="rec-controls">
+                <button class="btn btn-secondary" id="btn-rec-start" type="button" onclick="startRecording()">🎙️ Démarrer l'enregistrement</button>
+                <button class="btn btn-outline" id="btn-rec-stop" type="button" onclick="stopRecording()" disabled>⏹️ Arrêter</button>
+                <button class="btn btn-outline" id="btn-audio-upload" type="button" onclick="document.getElementById('audio-upload-input').click()">📁 Upload audio</button>
+                <button class="btn btn-primary" id="btn-rec-analyze" type="button" onclick="analyzeRecordedAudio()" disabled>🧠 Analyser l'appel audio</button>
+              </div>
+              <div id="ai-runtime-summary" style="font-size:12px;color:var(--text-light);margin-top:8px;">Moteur IA: —</div>
+              <input id="audio-upload-input" type="file" accept="audio/*" style="display:none;">
+              <audio id="audio-preview" class="audio-preview" controls style="display:none;"></audio>
+              <div id="audio-meta" style="font-size:12px;color:var(--text-light);margin-top:8px;"></div>
             </div>
 
             <!-- Drop zone -->
@@ -299,7 +359,7 @@ Pierre : Oui, j'aimerais savoir si on peut intégrer ça avec notre CRM actuel S
           <div class="card ai-loading" id="ai-loading">
             <div class="spinner"></div>
             <div style="font-weight: 700; font-size: 18px; color: var(--text-dark);">Analyse en cours...</div>
-            <div style="color: var(--text-gray);">GPT-4o lit le transcript et génère le résumé et les next steps</div>
+            <div style="color: var(--text-gray);">Le moteur IA analyse le transcript et génère le résumé et les next steps</div>
           </div>
 
           <!-- ── RÉSULTAT ───────────────────────────────── -->
@@ -360,6 +420,28 @@ Pierre : Oui, j'aimerais savoir si on peut intégrer ça avec notre CRM actuel S
               <div id="r-steps-list"></div>
               <div style="margin-top: 16px;">
                 <button class="btn btn-primary" onclick="goToReco()">Voir toutes les recommandations →</button>
+              </div>
+            </div>
+
+            <div class="card audio-insights" id="audio-insights-card">
+              <div class="card-header">
+                <h3 class="card-title">🎧 Insights audio (transcription automatique)</h3>
+              </div>
+              <div class="section-label">Résumé brut de l'appel</div>
+              <p id="audio-summary" style="color:var(--text-gray);font-size:14px;line-height:1.7;">—</p>
+              <div class="two-col" style="margin-top:16px;">
+                <div>
+                  <div class="section-label">Besoins détectés</div>
+                  <ul id="audio-needs"></ul>
+                </div>
+                <div>
+                  <div class="section-label">Objections détectées</div>
+                  <ul id="audio-objections"></ul>
+                </div>
+              </div>
+              <div style="margin-top:14px;">
+                <div class="section-label">Prochaines étapes proposées</div>
+                <ul id="audio-next-steps"></ul>
               </div>
             </div>
 
@@ -454,15 +536,27 @@ Pierre : Oui, j'aimerais savoir si on peut intégrer ça avec notre CRM actuel S
     </div>
   </div>
 
-  <script src="ai-engine.js"></script>
+  <script src="ai-engine-v2.js?v=20260417b"></script>
   <script src="main.js"></script>
   <script>
     // ── State ──────────────────────────────────────────────
     let lastResult = null;
+    let mediaRecorder = null;
+    let mediaStream = null;
+    let recordingChunks = [];
+    let recordedBlob = null;
+    let recStartedAt = 0;
+    let recTimer = null;
+
+    function ensureAudioAnalysisCompatibility() {
+      // Compat legacy: certains anciens bundles appellent encore cette fonction à l'init.
+      return Boolean(window.S360AI);
+    }
 
     // ── Update sidebar badge ───────────────────────────────
     function refreshBadge() {
-      const steps = S360AI.loadData(S360AI.STORAGE_NEXT_STEPS);
+      if (!window.S360AI) return;
+      const steps = window.S360AI.loadData(window.S360AI.STORAGE_NEXT_STEPS);
       const pending = steps.filter(s => !s.done).length;
       const badge = document.getElementById('sidebar-badge');
       if (badge) {
@@ -483,6 +577,7 @@ Pierre : Oui, j'aimerais savoir si on peut intégrer ça avec notre CRM actuel S
     // ── File drag/drop ─────────────────────────────────────
     const dropZone = document.getElementById('drop-zone');
     const fileInput = document.getElementById('file-input');
+    const audioUploadInput = document.getElementById('audio-upload-input');
 
     dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
     dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
@@ -496,6 +591,10 @@ Pierre : Oui, j'aimerais savoir si on peut intégrer ça avec notre CRM actuel S
     fileInput.addEventListener('change', () => {
       if (fileInput.files[0]) readFile(fileInput.files[0]);
     });
+    audioUploadInput.addEventListener('change', () => {
+      const file = audioUploadInput.files?.[0];
+      if (file) loadAudioBlobForAnalysis(file, `Fichier audio prêt (${file.name})`);
+    });
 
     function readFile(file) {
       const reader = new FileReader();
@@ -508,6 +607,15 @@ Pierre : Oui, j'aimerais savoir si on peut intégrer ça avec notre CRM actuel S
 
     // ── Main analysis ──────────────────────────────────────
     async function startAnalysis() {
+      if (!window.S360AI || typeof window.S360AI.analyzeTranscript !== 'function') {
+        showToast("❌ Moteur IA non chargé. Rechargez la page (Ctrl+F5).", 'error');
+        return;
+      }
+      const missing = window.S360AI.getMissingRequirements?.() || [];
+      if (missing.length) {
+        showToast(`⚠️ Configuration IA incomplète : ${missing.join(' · ')}`, 'warning');
+        return;
+      }
       const text = document.getElementById('transcript-input').value.trim();
       const caller = document.getElementById('caller-name').value.trim();
 
@@ -522,7 +630,7 @@ Pierre : Oui, j'aimerais savoir si on peut intégrer ça avec notre CRM actuel S
       document.getElementById('btn-analyze').disabled = true;
 
       try {
-        const res = await S360AI.analyzeTranscript(text, caller);
+        const res = await window.S360AI.analyzeTranscript(text, caller);
         lastResult = res;
         renderResult(res.analysis, res.nextSteps);
         refreshBadge();
@@ -534,6 +642,166 @@ Pierre : Oui, j'aimerais savoir si on peut intégrer ça avec notre CRM actuel S
         document.getElementById('ai-loading').style.display = 'none';
         document.getElementById('btn-analyze').disabled = false;
       }
+    }
+
+    function setRecordingStatus(text, isRecording = false) {
+      const status = document.getElementById('rec-status');
+      const statusText = document.getElementById('rec-status-text');
+      status.classList.toggle('recording', Boolean(isRecording));
+      statusText.textContent = text;
+    }
+
+    function updateRecorderButtons() {
+      document.getElementById('btn-rec-start').disabled = Boolean(mediaRecorder && mediaRecorder.state === 'recording');
+      document.getElementById('btn-rec-stop').disabled = !(mediaRecorder && mediaRecorder.state === 'recording');
+      document.getElementById('btn-rec-analyze').disabled = !recordedBlob;
+    }
+
+    function formatDuration(ms) {
+      const totalSec = Math.max(0, Math.floor(ms / 1000));
+      const min = String(Math.floor(totalSec / 60)).padStart(2, '0');
+      const sec = String(totalSec % 60).padStart(2, '0');
+      return `${min}:${sec}`;
+    }
+
+    function detectSupportedMimeType() {
+      const candidates = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4', 'audio/ogg;codecs=opus', 'audio/wav'];
+      return candidates.find(t => window.MediaRecorder?.isTypeSupported?.(t)) || '';
+    }
+
+    async function startRecording() {
+      if (!navigator.mediaDevices?.getUserMedia) {
+        showToast('❌ Cet appareil ne supporte pas l’enregistrement micro.', 'error');
+        return;
+      }
+
+      try {
+        mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      } catch (err) {
+        showToast('❌ Accès micro refusé ou indisponible.', 'error');
+        console.error(err);
+        return;
+      }
+
+      try {
+        const mimeType = detectSupportedMimeType();
+        mediaRecorder = mimeType ? new MediaRecorder(mediaStream, { mimeType }) : new MediaRecorder(mediaStream);
+      } catch (err) {
+        showToast('❌ Impossible de démarrer MediaRecorder.', 'error');
+        console.error(err);
+        return;
+      }
+
+      recordedBlob = null;
+      recordingChunks = [];
+      document.getElementById('audio-preview').style.display = 'none';
+      document.getElementById('audio-preview').src = '';
+      document.getElementById('audio-meta').textContent = '';
+      updateRecorderButtons();
+
+      mediaRecorder.ondataavailable = e => {
+        if (e.data && e.data.size > 0) recordingChunks.push(e.data);
+      };
+
+      mediaRecorder.onerror = (e) => {
+        console.error('MediaRecorder error', e);
+        showToast('❌ Erreur pendant l’enregistrement.', 'error');
+      };
+
+      mediaRecorder.onstop = () => {
+        const mime = mediaRecorder.mimeType || 'audio/webm';
+        loadAudioBlobForAnalysis(new Blob(recordingChunks, { type: mime }), 'Enregistrement prêt à être analysé.');
+      };
+
+      recStartedAt = Date.now();
+      setRecordingStatus('Enregistrement 00:00', true);
+      recTimer = setInterval(() => {
+        setRecordingStatus(`Enregistrement ${formatDuration(Date.now() - recStartedAt)}`, true);
+      }, 1000);
+
+      mediaRecorder.start();
+      updateRecorderButtons();
+      showToast('🎙️ Enregistrement démarré');
+    }
+
+    function stopRecording() {
+      if (!mediaRecorder || mediaRecorder.state !== 'recording') return;
+      mediaRecorder.stop();
+      if (recTimer) clearInterval(recTimer);
+      recTimer = null;
+      setRecordingStatus('Enregistrement arrêté');
+      if (mediaStream) {
+        mediaStream.getTracks().forEach(t => t.stop());
+        mediaStream = null;
+      }
+      updateRecorderButtons();
+      showToast('⏹️ Enregistrement terminé');
+    }
+
+    function loadAudioBlobForAnalysis(blob, successMessage = 'Audio prêt à être analysé.') {
+      recordedBlob = blob;
+      if (!recordedBlob?.size) {
+        showToast('⚠️ Audio invalide ou vide.', 'warning');
+        recordedBlob = null;
+        updateRecorderButtons();
+        return;
+      }
+      const audioUrl = URL.createObjectURL(recordedBlob);
+      const preview = document.getElementById('audio-preview');
+      preview.src = audioUrl;
+      preview.style.display = 'block';
+      document.getElementById('audio-meta').textContent = `Format détecté: ${recordedBlob.type || 'audio/webm'} · Taille: ${(recordedBlob.size / 1024).toFixed(1)} Ko`;
+      updateRecorderButtons();
+      showToast(`✅ ${successMessage}`);
+    }
+
+    async function analyzeRecordedAudio() {
+      if (!recordedBlob || !recordedBlob.size) {
+        showToast('⚠️ Aucun enregistrement à analyser.', 'warning');
+        return;
+      }
+
+      const caller = document.getElementById('caller-name').value.trim();
+      document.getElementById('ai-loading').style.display = 'flex';
+      document.getElementById('ai-result').style.display = 'none';
+      document.getElementById('btn-rec-analyze').disabled = true;
+
+      try {
+        const missing = window.S360AI?.getMissingRequirements?.() || [];
+        if (missing.length) throw new Error(`Configuration IA incomplète : ${missing.join(' · ')}`);
+        const analyzeAudioFn = window.S360AI?.analyzeCallAudio;
+        if (typeof analyzeAudioFn !== 'function') {
+          throw new Error("Le moteur IA audio n'est pas chargé. Rechargez la page.");
+        }
+        const res = await analyzeAudioFn(recordedBlob, caller);
+        lastResult = res;
+        document.getElementById('transcript-input').value = res.transcript || '';
+        renderResult(res.analysis, res.nextSteps);
+        renderAudioInsights(res.audioAnalysis);
+        refreshBadge();
+        showToast('✅ Analyse audio terminée !');
+      } catch (err) {
+        showToast('❌ Erreur audio : ' + err.message, 'error');
+        console.error(err);
+      } finally {
+        document.getElementById('ai-loading').style.display = 'none';
+        document.getElementById('btn-rec-analyze').disabled = false;
+      }
+    }
+
+    function renderAudioInsights(audio) {
+      const card = document.getElementById('audio-insights-card');
+      if (!audio) {
+        card.style.display = 'none';
+        return;
+      }
+
+      const mkList = (arr, fallback) => (arr?.length ? arr.map(x => `<li>${x}</li>`).join('') : `<li>${fallback}</li>`);
+      document.getElementById('audio-summary').textContent = audio.summary || 'Résumé non disponible.';
+      document.getElementById('audio-needs').innerHTML = mkList(audio.needs, 'Aucun besoin détecté.');
+      document.getElementById('audio-objections').innerHTML = mkList(audio.objections, 'Aucune objection détectée.');
+      document.getElementById('audio-next-steps').innerHTML = mkList(audio.next_steps, 'Aucune prochaine étape détectée.');
+      card.style.display = 'block';
     }
 
     // ── Render result ──────────────────────────────────────
@@ -606,7 +874,14 @@ Pierre : Oui, j'aimerais savoir si on peut intégrer ça avec notre CRM actuel S
       document.getElementById('transcript-input').value = '';
       document.getElementById('caller-name').value = '';
       document.getElementById('ai-result').style.display = 'none';
+      document.getElementById('audio-insights-card').style.display = 'none';
       fileInput.value = '';
+      audioUploadInput.value = '';
+      recordedBlob = null;
+      document.getElementById('audio-preview').style.display = 'none';
+      document.getElementById('audio-preview').src = '';
+      document.getElementById('audio-meta').textContent = '';
+      updateRecorderButtons();
     }
 
     function goToContacts()     { window.location.href = 'contacts.html'; }
@@ -614,7 +889,8 @@ Pierre : Oui, j'aimerais savoir si on peut intégrer ça avec notre CRM actuel S
 
     // ── Render history ─────────────────────────────────────
     function renderHistory() {
-      const calls = S360AI.loadData(S360AI.STORAGE_CALLS);
+      if (!window.S360AI) return;
+      const calls = window.S360AI.loadData(window.S360AI.STORAGE_CALLS);
       const container = document.getElementById('call-history-list');
 
       if (!calls.length) {
@@ -630,7 +906,7 @@ Pierre : Oui, j'aimerais savoir si on peut intégrer ça avec notre CRM actuel S
         const initials = (p.name || '??').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
         const sentiment = c.analysis?.callSummary?.sentiment || 'neutre';
         const sentEmoji = { positif: '😊', neutre: '😐', négatif: '😟' }[sentiment] || '😐';
-        const steps = (S360AI.loadData(S360AI.STORAGE_NEXT_STEPS)).filter(s => s.callId === c.id);
+        const steps = (window.S360AI.loadData(window.S360AI.STORAGE_NEXT_STEPS)).filter(s => s.callId === c.id);
         const pending = steps.filter(s => !s.done).length;
         return `
           <div class="call-history-item" onclick="openCallDetail('${c.id}')">
@@ -652,13 +928,14 @@ Pierre : Oui, j'aimerais savoir si on peut intégrer ça avec notre CRM actuel S
 
     // ── Open call detail modal ─────────────────────────────
     function openCallDetail(callId) {
-      const calls = S360AI.loadData(S360AI.STORAGE_CALLS);
+      if (!window.S360AI) return;
+      const calls = window.S360AI.loadData(window.S360AI.STORAGE_CALLS);
       const call  = calls.find(c => c.id === callId);
       if (!call) return;
 
       const p  = call.analysis?.prospect || {};
       const cs = call.analysis?.callSummary || {};
-      const steps = S360AI.loadData(S360AI.STORAGE_NEXT_STEPS).filter(s => s.callId === callId);
+      const steps = window.S360AI.loadData(window.S360AI.STORAGE_NEXT_STEPS).filter(s => s.callId === callId);
       const icons = { urgent: '⚡', 'follow-up': '📅', opportunity: '🎯', risk: '⚠️' };
 
       document.getElementById('modal-call-title').textContent = `${p.name || 'Inconnu'} — ${new Date(call.date).toLocaleString('fr-FR')}`;
@@ -693,8 +970,9 @@ Pierre : Oui, j'aimerais savoir si on peut intégrer ça avec notre CRM actuel S
 
     // ── Clear history ──────────────────────────────────────
     function clearHistory() {
+      if (!window.S360AI) return;
       if (confirm('Vider tout l\'historique des appels ? (les contacts et next steps seront conservés)')) {
-        S360AI.saveData(S360AI.STORAGE_CALLS, []);
+        window.S360AI.saveData(window.S360AI.STORAGE_CALLS, []);
         renderHistory();
         showToast('🗑️ Historique vidé');
       }
@@ -714,9 +992,27 @@ Pierre : Oui, j'aimerais savoir si on peut intégrer ça avec notre CRM actuel S
       if (e.target === document.getElementById('call-detail-modal'))
         closeCallModal();
     });
+    window.addEventListener('beforeunload', () => {
+      if (mediaStream) mediaStream.getTracks().forEach(t => t.stop());
+    });
 
     // ── Init ───────────────────────────────────────────────
+    ensureAudioAnalysisCompatibility();
+    if (window.S360AI && typeof window.S360AI.getActiveAiSummary === 'function') {
+      const summary = window.S360AI.getActiveAiSummary();
+      const missing = window.S360AI.getMissingRequirements?.() || [];
+      const aiEl = document.getElementById('ai-runtime-summary');
+      if (aiEl) aiEl.textContent = `Moteur IA: ${summary}${missing.length ? ` · Manquant: ${missing.join(', ')}` : ' · Prêt ✅'}`;
+      const summaryTop = document.getElementById('telephony-ai-summary');
+      const pill = document.getElementById('telephony-ai-pill');
+      if (summaryTop) summaryTop.textContent = summary;
+      if (pill) {
+        pill.className = `status-pill ${missing.length ? 'status-warn' : 'status-ok'}`;
+        pill.textContent = missing.length ? 'Configuration incomplète' : 'Moteur prêt ✅';
+      }
+    }
     refreshBadge();
+    updateRecorderButtons();
 
     // Expose functions
     window.startAnalysis = startAnalysis;
@@ -728,6 +1024,9 @@ Pierre : Oui, j'aimerais savoir si on peut intégrer ça avec notre CRM actuel S
     window.openCallDetail= openCallDetail;
     window.closeCallModal= closeCallModal;
     window.showToast     = showToast;
+    window.startRecording = startRecording;
+    window.stopRecording = stopRecording;
+    window.analyzeRecordedAudio = analyzeRecordedAudio;
   </script>
 </body>
 </html>

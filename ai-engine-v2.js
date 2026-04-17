@@ -1,5 +1,5 @@
 (() => {
-if (window.S360AI && window.S360AI.__engineId === "s360-openai-single-v1") return;
+if (window.S360AI && (window.S360AI.__engineId === "s360-openai-single-v1" || window.S360AI.__engineId === "s360-openai-single-v2")) return;
 
 const STORAGE_CALLS = "s360_calls";
 const STORAGE_CONTACTS = "s360_contacts";
@@ -264,9 +264,9 @@ function getStats() {
 }
 
 window.S360AI = {
-  __engineId: "s360-openai-single-v1",
+  __engineId: "s360-openai-single-v2",
   provider: "openai",
-  version: "2026-04-17-openai-single",
+  version: "2026-04-17-openai-single-v2",
   STORAGE_CALLS, STORAGE_CONTACTS, STORAGE_NEXT_STEPS,
   loadData, saveData,
   getAiMode, setAiMode, getAiConfig, saveAiConfig,
