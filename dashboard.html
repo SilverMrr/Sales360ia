@@ -133,6 +133,12 @@
             <div class="stat-value">14</div>
             <div class="stat-change positive">↑ 5</div>
           </div>
+
+          <div class="stat-card">
+            <div class="stat-label">Moteur IA actif</div>
+            <div class="stat-value" id="ai-status-main" style="font-size: 20px;">—</div>
+            <div class="stat-change" id="ai-status-sub">Configuration en attente</div>
+          </div>
         </div>
 
         <!-- Charts Row -->
@@ -292,6 +298,21 @@
     </main>
   </div>
 
+  <script src="ai-engine.js?v=20260417a"></script>
   <script src="main.js"></script>
+  <script>
+    (function initAiStatus(){
+      if (!window.S360AI) return;
+      const summary = window.S360AI.getActiveAiSummary?.() || 'Moteur IA';
+      const missing = window.S360AI.getMissingRequirements?.() || [];
+      const main = document.getElementById('ai-status-main');
+      const sub = document.getElementById('ai-status-sub');
+      if (main) main.textContent = summary;
+      if (sub) {
+        sub.textContent = missing.length ? `Manquant: ${missing.join(' · ')}` : 'Prêt ✅';
+        sub.className = `stat-change ${missing.length ? 'negative' : 'positive'}`;
+      }
+    })();
+  </script>
 </body>
 </html>

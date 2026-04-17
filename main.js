@@ -1,3 +1,7 @@
+(() => {
+if (window.__s360_main_loaded) return;
+window.__s360_main_loaded = true;
+
 // Language translations
 const translations = {
   fr: {
@@ -489,3 +493,4 @@ window.answerCall = answerCall
 window.declineCall = declineCall
 window.handleLogin = handleLogin
 window.showContactRecommendations = showContactRecommendations
+})();
