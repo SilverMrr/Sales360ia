@@ -308,6 +308,13 @@
                 <button class="btn btn-primary" id="btn-rec-analyze" type="button" onclick="analyzeRecordedAudio()" disabled>🧠 Analyser l'appel audio</button>
               </div>
               <div id="ai-runtime-summary" style="font-size:12px;color:var(--text-light);margin-top:8px;">Moteur IA: —</div>
+              <div style="margin-top:10px; display:flex; gap:8px; flex-wrap:wrap;">
+                <input id="api-base-url" class="form-input" placeholder="URL backend (ex: https://api.monapp.com)" style="max-width:420px;">
+                <button type="button" class="btn btn-outline" onclick="saveApiBaseUrl()">💾 Sauver URL API</button>
+              </div>
+              <div style="font-size:12px;color:var(--text-light);margin-top:6px;">
+                Sur GitHub Pages, configurez l'URL de votre backend (sinon /api/* n'existe pas).
+              </div>
               <input id="audio-upload-input" type="file" accept="audio/*" style="display:none;">
               <audio id="audio-preview" class="audio-preview" controls style="display:none;"></audio>
               <div id="audio-meta" style="font-size:12px;color:var(--text-light);margin-top:8px;"></div>
@@ -360,6 +367,7 @@ Pierre : Oui, j'aimerais savoir si on peut intégrer ça avec notre CRM actuel S
             <div class="spinner"></div>
             <div style="font-weight: 700; font-size: 18px; color: var(--text-dark);">Analyse en cours...</div>
             <div style="color: var(--text-gray);">Le moteur IA analyse le transcript et génère le résumé et les next steps</div>
+            <div style="color: var(--text-gray);">Gemini lit le transcript et génère le résumé et les next steps</div>
           </div>
 
           <!-- ── RÉSULTAT ───────────────────────────────── -->
@@ -537,6 +545,8 @@ Pierre : Oui, j'aimerais savoir si on peut intégrer ça avec notre CRM actuel S
   </div>
 
   <script src="ai-engine.js?v=20260417a"></script>
+  <script src="ai-engine.js?v=20260328a"></script>
+  <script src="ai-engine.js?v=20260327e"></script>
   <script src="main.js"></script>
   <script>
     // ── State ──────────────────────────────────────────────
@@ -978,6 +988,17 @@ Pierre : Oui, j'aimerais savoir si on peut intégrer ça avec notre CRM actuel S
       }
     }
 
+    function saveApiBaseUrl() {
+      const input = document.getElementById('api-base-url');
+      const url = input?.value || '';
+      if (!window.S360AI || typeof window.S360AI.setApiBaseUrl !== 'function') {
+        showToast("❌ Moteur IA non chargé.", 'error');
+        return;
+      }
+      const saved = window.S360AI.setApiBaseUrl(url);
+      showToast(saved ? `✅ URL API sauvegardée: ${saved}` : '✅ URL API locale (/api) activée');
+    }
+
     // ── Toast helper ───────────────────────────────────────
     function showToast(msg, type = 'success') {
       const toast = document.getElementById('toast');
@@ -1009,6 +1030,12 @@ Pierre : Oui, j'aimerais savoir si on peut intégrer ça avec notre CRM actuel S
       if (pill) {
         pill.className = `status-pill ${missing.length ? 'status-warn' : 'status-ok'}`;
         pill.textContent = missing.length ? 'Configuration incomplète' : 'Moteur prêt ✅';
+    if (window.S360AI && typeof window.S360AI.getApiBaseUrl === 'function') {
+      const currentApiBase = window.S360AI.getApiBaseUrl();
+      const apiInput = document.getElementById('api-base-url');
+      if (apiInput) apiInput.value = currentApiBase || '';
+      if (location.hostname.includes('github.io') && !currentApiBase) {
+        showToast("⚠️ Configurez l'URL backend API pour GitHub Pages.", 'warning');
       }
     }
     refreshBadge();
@@ -1027,6 +1054,7 @@ Pierre : Oui, j'aimerais savoir si on peut intégrer ça avec notre CRM actuel S
     window.startRecording = startRecording;
     window.stopRecording = stopRecording;
     window.analyzeRecordedAudio = analyzeRecordedAudio;
+    window.saveApiBaseUrl = saveApiBaseUrl;
   </script>
 </body>
 </html>
